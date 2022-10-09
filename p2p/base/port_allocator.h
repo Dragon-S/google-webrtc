@@ -19,6 +19,7 @@
 #include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
 #include "api/transport/enums.h"
+#include "api/media_types.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_interface.h"
 #include "rtc_base/helpers.h"
@@ -190,6 +191,7 @@ class RTC_EXPORT PortAllocatorSession : public sigslot::has_slots<> {
  public:
   // Content name passed in mostly for logging and debugging.
   PortAllocatorSession(absl::string_view content_name,
+                       cricket::MediaType media_type,
                        int component,
                        absl::string_view ice_ufrag,
                        absl::string_view ice_pwd,
@@ -201,6 +203,7 @@ class RTC_EXPORT PortAllocatorSession : public sigslot::has_slots<> {
   uint32_t flags() const { return flags_; }
   void set_flags(uint32_t flags) { flags_ = flags; }
   std::string content_name() const { return content_name_; }
+  cricket::MediaType media_type() const { return media_type_; }
   int component() const { return component_; }
   const std::string& ice_ufrag() const { return ice_ufrag_; }
   const std::string& ice_pwd() const { return ice_pwd_; }
@@ -316,6 +319,7 @@ class RTC_EXPORT PortAllocatorSession : public sigslot::has_slots<> {
   uint32_t flags_;
   uint32_t generation_;
   std::string content_name_;
+  cricket::MediaType media_type_;
   int component_;
   std::string ice_ufrag_;
   std::string ice_pwd_;
@@ -413,6 +417,7 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
 
   std::unique_ptr<PortAllocatorSession> CreateSession(
       absl::string_view content_name,
+      cricket::MediaType media_type,
       int component,
       absl::string_view ice_ufrag,
       absl::string_view ice_pwd);
@@ -484,14 +489,44 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
   }
 
   // Gets/Sets the port range to use when choosing client ports.
-  int min_port() const {
+  int min_audio_port() const {
     CheckRunOnValidThreadIfInitialized();
-    return min_port_;
+    return min_audio_port_;
   }
 
-  int max_port() const {
+  int min_video_port() const {
     CheckRunOnValidThreadIfInitialized();
-    return max_port_;
+    return min_video_port_;
+  }
+
+  int min_screen_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return min_screen_port_;
+  }
+
+  int min_data_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return min_data_port_;
+  }
+
+  int max_audio_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return max_audio_port_;
+  }
+
+  int max_video_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return max_video_port_;
+  }
+
+  int max_screen_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return max_screen_port_;
+  }
+
+  int max_data_port() const {
+    CheckRunOnValidThreadIfInitialized();
+    return max_data_port_;
   }
 
   bool SetPortRange(int min_port, int max_port) {
@@ -502,6 +537,50 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
 
     min_port_ = min_port;
     max_port_ = max_port;
+    return true;
+  }
+
+  bool SetAudioPortRange(int min_port, int max_port) {
+    CheckRunOnValidThreadIfInitialized();
+    if (min_port > max_port) {
+      return false;
+    }
+
+    min_audio_port_ = min_port;
+    max_audio_port_ = max_port;
+    return true;
+  }
+
+  bool SetVideoPortRange(int min_port, int max_port) {
+    CheckRunOnValidThreadIfInitialized();
+    if (min_port > max_port) {
+      return false;
+    }
+
+    min_video_port_ = min_port;
+    max_video_port_ = max_port;
+    return true;
+  }
+
+  bool SetScreenPortRange(int min_port, int max_port) {
+    CheckRunOnValidThreadIfInitialized();
+    if (min_port > max_port) {
+      return false;
+    }
+
+    min_screen_port_ = min_port;
+    max_screen_port_ = max_port;
+    return true;
+  }
+
+  bool SetDataPortRange(int min_port, int max_port) {
+    CheckRunOnValidThreadIfInitialized();
+    if (min_port > max_port) {
+      return false;
+    }
+
+    min_data_port_ = min_port;
+    max_data_port_ = max_port;
     return true;
   }
 
@@ -607,6 +686,7 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
   // migrated to the absl::string_view version.
   virtual PortAllocatorSession* CreateSessionInternal(
       absl::string_view content_name,
+      cricket::MediaType media_type,
       int component,
       absl::string_view ice_ufrag,
       absl::string_view ice_pwd) = 0;
@@ -634,6 +714,14 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
   rtc::ProxyInfo proxy_;
   int min_port_;
   int max_port_;
+  int min_audio_port_;
+  int max_audio_port_;
+  int min_video_port_;
+  int max_video_port_;
+  int min_screen_port_;
+  int max_screen_port_;
+  int min_data_port_;
+  int max_data_port_;
   int max_ipv6_networks_;
   uint32_t step_delay_;
   bool allow_tcp_listen_;

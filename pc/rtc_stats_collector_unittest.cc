@@ -2953,6 +2953,7 @@ class RTCStatsCollectorTestWithParamKind
         return "Audio";
       case cricket::MEDIA_TYPE_VIDEO:
         return "Video";
+      case cricket::MEDIA_TYPE_SCREEN:
       case cricket::MEDIA_TYPE_DATA:
       case cricket::MEDIA_TYPE_UNSUPPORTED:
         RTC_DCHECK_NOTREACHED();
@@ -3010,6 +3011,7 @@ class RTCStatsCollectorTestWithParamKind
         pc_->AddVideoChannel("mid", transport_name, video_media_info);
         return;
       }
+      case cricket::MEDIA_TYPE_SCREEN:
       case cricket::MEDIA_TYPE_DATA:
       case cricket::MEDIA_TYPE_UNSUPPORTED:
         RTC_DCHECK_NOTREACHED();

@@ -59,6 +59,7 @@
 #include "p2p/base/port_allocator.h"
 #include "p2p/base/port_interface.h"
 #include "p2p/base/regathering_controller.h"
+#include "pc/session_description.h"
 #include "p2p/base/transport_description.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/checks.h"
@@ -108,12 +109,14 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
  public:
   static std::unique_ptr<P2PTransportChannel> Create(
       absl::string_view transport_name,
+      cricket::MediaType media_type,
       int component,
       webrtc::IceTransportInit init);
 
   // For testing only.
   // TODO(zstein): Remove once AsyncDnsResolverFactory is required.
   P2PTransportChannel(absl::string_view transport_name,
+                      cricket::MediaType media_type,
                       int component,
                       PortAllocator* allocator,
                       const webrtc::FieldTrialsView* field_trials = nullptr);
@@ -128,6 +131,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
   webrtc::IceTransportState GetIceTransportState() const override;
 
   const std::string& transport_name() const override;
+  cricket::MediaType media_type() const override;
   int component() const override;
   bool writable() const override;
   bool receiving() const override;
@@ -239,6 +243,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
  private:
   P2PTransportChannel(
       absl::string_view transport_name,
+      cricket::MediaType media_type,
       int component,
       PortAllocator* allocator,
       // DNS resolver factory
@@ -406,6 +411,7 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
 
   webrtc::ScopedTaskSafety task_safety_;
   std::string transport_name_ RTC_GUARDED_BY(network_thread_);
+  cricket::MediaType media_type_ RTC_GUARDED_BY(network_thread_);
   int component_ RTC_GUARDED_BY(network_thread_);
   PortAllocator* allocator_ RTC_GUARDED_BY(network_thread_);
   webrtc::AsyncDnsResolverFactoryInterface* const async_dns_resolver_factory_

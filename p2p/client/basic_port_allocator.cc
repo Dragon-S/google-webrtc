@@ -258,12 +258,13 @@ int BasicPortAllocator::GetNetworkIgnoreMask() const {
 
 PortAllocatorSession* BasicPortAllocator::CreateSessionInternal(
     absl::string_view content_name,
+    cricket::MediaType media_type,
     int component,
     absl::string_view ice_ufrag,
     absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   PortAllocatorSession* session = new BasicPortAllocatorSession(
-      this, std::string(content_name), component, std::string(ice_ufrag),
+      this, std::string(content_name), media_type, component, std::string(ice_ufrag),
       std::string(ice_pwd));
   session->SignalIceRegathering.connect(this,
                                         &BasicPortAllocator::OnIceRegathering);
@@ -299,10 +300,12 @@ void BasicPortAllocator::Init(RelayPortFactoryInterface* relay_port_factory,
 BasicPortAllocatorSession::BasicPortAllocatorSession(
     BasicPortAllocator* allocator,
     absl::string_view content_name,
+    cricket::MediaType media_type,
     int component,
     absl::string_view ice_ufrag,
     absl::string_view ice_pwd)
     : PortAllocatorSession(content_name,
+                           media_type,
                            component,
                            ice_ufrag,
                            ice_pwd,
@@ -1293,10 +1296,32 @@ AllocationSequence::AllocationSequence(
           std::move(port_allocation_complete_callback)) {}
 
 void AllocationSequence::Init() {
+  int min_port = 0, max_port = 0;
+
+  switch (session_->media_type()) {
+    case cricket::MediaType::MEDIA_TYPE_AUDIO:
+      min_port = session_->allocator_->min_audio_port();
+      max_port = session_->allocator_->max_audio_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_VIDEO:
+      min_port = session_->allocator_->min_video_port();
+      max_port = session_->allocator_->max_video_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_DATA:
+      min_port = session_->allocator_->min_data_port();
+      max_port = session_->allocator_->max_data_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_SCREEN:
+      min_port = session_->allocator_->min_screen_port();
+      max_port = session_->allocator_->max_screen_port();
+      break;
+    default:
+      break;
+  }
   if (IsFlagSet(PORTALLOCATOR_ENABLE_SHARED_SOCKET)) {
     udp_socket_.reset(session_->socket_factory()->CreateUdpSocket(
         rtc::SocketAddress(network_->GetBestIP(), 0),
-        session_->allocator()->min_port(), session_->allocator()->max_port()));
+        min_port, max_port));
     if (udp_socket_) {
       udp_socket_->SignalReadPacket.connect(this,
                                             &AllocationSequence::OnReadPacket);
@@ -1473,9 +1498,31 @@ void AllocationSequence::CreateUDPPorts() {
         session_->allocator()->stun_candidate_keepalive_interval(),
         session_->allocator()->field_trials());
   } else {
+    uint16_t min_port = 0, max_port = 0;
+
+    switch (session_->media_type()) {
+      case cricket::MediaType::MEDIA_TYPE_AUDIO:
+        min_port = session_->allocator_->min_audio_port();
+        max_port = session_->allocator_->max_audio_port();
+        break;
+      case cricket::MediaType::MEDIA_TYPE_VIDEO:
+        min_port = session_->allocator_->min_video_port();
+        max_port = session_->allocator_->max_video_port();
+        break;
+      case cricket::MediaType::MEDIA_TYPE_DATA:
+        min_port = session_->allocator_->min_data_port();
+        max_port = session_->allocator_->max_data_port();
+        break;
+      case cricket::MediaType::MEDIA_TYPE_SCREEN:
+        min_port = session_->allocator_->min_screen_port();
+        max_port = session_->allocator_->max_screen_port();
+        break;
+      default:
+        break;
+    }
     port = UDPPort::Create(
         session_->network_thread(), session_->socket_factory(), network_,
-        session_->allocator()->min_port(), session_->allocator()->max_port(),
+        min_port, max_port,
         session_->username(), session_->password(),
         emit_local_candidate_for_anyaddress,
         session_->allocator()->stun_candidate_keepalive_interval(),
@@ -1510,10 +1557,31 @@ void AllocationSequence::CreateTCPPorts() {
     RTC_LOG(LS_VERBOSE) << "AllocationSequence: TCP ports disabled, skipping.";
     return;
   }
+  uint16_t min_port = 0, max_port = 0;
 
+  switch (session_->media_type()) {
+    case cricket::MediaType::MEDIA_TYPE_AUDIO:
+      min_port = session_->allocator_->min_audio_port();
+      max_port = session_->allocator_->max_audio_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_VIDEO:
+      min_port = session_->allocator_->min_video_port();
+      max_port = session_->allocator_->max_video_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_DATA:
+      min_port = session_->allocator_->min_data_port();
+      max_port = session_->allocator_->max_data_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_SCREEN:
+      min_port = session_->allocator_->min_screen_port();
+      max_port = session_->allocator_->max_screen_port();
+      break;
+    default:
+      break;
+  }
   std::unique_ptr<Port> port = TCPPort::Create(
       session_->network_thread(), session_->socket_factory(), network_,
-      session_->allocator()->min_port(), session_->allocator()->max_port(),
+      min_port, max_port,
       session_->username(), session_->password(),
       session_->allocator()->allow_tcp_listen(),
       session_->allocator()->field_trials());
@@ -1539,10 +1607,31 @@ void AllocationSequence::CreateStunPorts() {
         << "AllocationSequence: No STUN server configured, skipping.";
     return;
   }
+  uint16_t min_port = 0, max_port = 0;
 
+  switch (session_->media_type()) {
+    case cricket::MediaType::MEDIA_TYPE_AUDIO:
+      min_port = session_->allocator_->min_audio_port();
+      max_port = session_->allocator_->max_audio_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_VIDEO:
+      min_port = session_->allocator_->min_video_port();
+      max_port = session_->allocator_->max_video_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_DATA:
+      min_port = session_->allocator_->min_data_port();
+      max_port = session_->allocator_->max_data_port();
+      break;
+    case cricket::MediaType::MEDIA_TYPE_SCREEN:
+      min_port = session_->allocator_->min_screen_port();
+      max_port = session_->allocator_->max_screen_port();
+      break;
+    default:
+      break;
+  }
   std::unique_ptr<StunPort> port = StunPort::Create(
       session_->network_thread(), session_->socket_factory(), network_,
-      session_->allocator()->min_port(), session_->allocator()->max_port(),
+      min_port, max_port,
       session_->username(), session_->password(), config_->StunServers(),
       session_->allocator()->stun_candidate_keepalive_interval(),
       session_->allocator()->field_trials());
@@ -1632,9 +1721,30 @@ void AllocationSequence::CreateTurnPort(const RelayServerConfig& config) {
           [this](PortInterface* port) { OnPortDestroyed(port); });
 
     } else {
+      uint16_t min_port = 0, max_port = 0;
+
+      switch (session_->media_type()) {
+        case cricket::MediaType::MEDIA_TYPE_AUDIO:
+          min_port = session_->allocator_->min_audio_port();
+          max_port = session_->allocator_->max_audio_port();
+          break;
+        case cricket::MediaType::MEDIA_TYPE_VIDEO:
+          min_port = session_->allocator_->min_video_port();
+          max_port = session_->allocator_->max_video_port();
+          break;
+        case cricket::MediaType::MEDIA_TYPE_DATA:
+          min_port = session_->allocator_->min_data_port();
+          max_port = session_->allocator_->max_data_port();
+          break;
+        case cricket::MediaType::MEDIA_TYPE_SCREEN:
+          min_port = session_->allocator_->min_screen_port();
+          max_port = session_->allocator_->max_screen_port();
+          break;
+        default:
+          break;
+      }
       port = session_->allocator()->relay_port_factory()->Create(
-          args, session_->allocator()->min_port(),
-          session_->allocator()->max_port());
+          args, min_port, max_port);
 
       if (!port) {
         RTC_LOG(LS_WARNING) << "Failed to create relay port with "

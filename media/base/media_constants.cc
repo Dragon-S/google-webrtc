@@ -17,6 +17,7 @@ const int kVideoCodecClockrate = 90000;
 const int kVideoMtu = 1200;
 const int kVideoRtpSendBufferSize = 65536;
 const int kVideoRtpRecvBufferSize = 262144;
+const int kVideoRtpBufferSizeIncreased = 4 * 1024 * 1024;
 
 const float kHighSystemCpuThreshold = 0.85f;
 const float kLowSystemCpuThreshold = 0.65f;

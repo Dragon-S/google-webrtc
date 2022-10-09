@@ -269,17 +269,18 @@ class BasicPortAllocatorTestBase : public ::testing::Test,
       absl::string_view sid,
       absl::string_view content_name,
       int component) {
-    return CreateSession(sid, content_name, component, kIceUfrag0, kIcePwd0);
+    return CreateSession(sid, cricket::MEDIA_TYPE_VIDEO, content_name, component, kIceUfrag0, kIcePwd0);
   }
 
   std::unique_ptr<PortAllocatorSession> CreateSession(
       absl::string_view sid,
+      cricket::MediaType media_type,
       absl::string_view content_name,
       int component,
       absl::string_view ice_ufrag,
       absl::string_view ice_pwd) {
     std::unique_ptr<PortAllocatorSession> session =
-        allocator_->CreateSession(content_name, component, ice_ufrag, ice_pwd);
+        allocator_->CreateSession(content_name, media_type, component, ice_ufrag, ice_pwd);
     session->SignalPortReady.connect(this,
                                      &BasicPortAllocatorTestBase::OnPortReady);
     session->SignalPortsPruned.connect(

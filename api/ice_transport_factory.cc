@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 
+#include "api/media_types.h"
 #include "api/make_ref_counted.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/p2p_constants.h"
@@ -61,7 +62,7 @@ rtc::scoped_refptr<IceTransportInterface> CreateIceTransport(
     IceTransportInit init) {
   return rtc::make_ref_counted<IceTransportWithTransportChannel>(
       cricket::P2PTransportChannel::Create(
-          "", cricket::ICE_CANDIDATE_COMPONENT_RTP, std::move(init)));
+          "", cricket::MediaType::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP, std::move(init)));
 }
 
 }  // namespace webrtc

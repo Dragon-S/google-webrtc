@@ -116,7 +116,7 @@ class RtpSenderReceiverTest
         fake_call_(worker_thread_, network_thread_),
         local_stream_(MediaStream::Create(kStreamId1)) {
     rtp_dtls_transport_ = std::make_unique<cricket::FakeDtlsTransport>(
-        "fake_dtls_transport", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+        "fake_dtls_transport", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
     rtp_transport_ = CreateDtlsSrtpTransport();
 
     // Create the channels, discard the result; we get them later.

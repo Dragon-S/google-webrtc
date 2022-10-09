@@ -38,7 +38,7 @@ class IceTransportTest : public ::testing::Test {
 
 TEST_F(IceTransportTest, CreateNonSelfDeletingTransport) {
   auto cricket_transport =
-      std::make_unique<cricket::FakeIceTransport>("name", 0, nullptr);
+      std::make_unique<cricket::FakeIceTransport>("name", cricket::MEDIA_TYPE_VIDEO, 0, nullptr);
   auto ice_transport =
       rtc::make_ref_counted<IceTransportWithPointer>(cricket_transport.get());
   EXPECT_EQ(ice_transport->internal(), cricket_transport.get());

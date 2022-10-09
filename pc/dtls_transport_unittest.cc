@@ -63,7 +63,7 @@ class DtlsTransportTest : public ::testing::Test {
 
   void CreateTransport(rtc::FakeSSLCertificate* certificate = nullptr) {
     auto cricket_transport = std::make_unique<FakeDtlsTransport>(
-        "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+        "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
     if (certificate) {
       cricket_transport->SetRemoteSSLCertificate(certificate);
     }
@@ -75,7 +75,7 @@ class DtlsTransportTest : public ::testing::Test {
   void CompleteDtlsHandshake() {
     auto fake_dtls1 = static_cast<FakeDtlsTransport*>(transport_->internal());
     auto fake_dtls2 = std::make_unique<FakeDtlsTransport>(
-        "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+        "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
     auto cert1 = rtc::RTCCertificate::Create(
         rtc::SSLIdentity::Create("session1", rtc::KT_DEFAULT));
     fake_dtls1->SetLocalCertificate(cert1);
@@ -92,7 +92,7 @@ class DtlsTransportTest : public ::testing::Test {
 
 TEST_F(DtlsTransportTest, CreateClearDelete) {
   auto cricket_transport = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto webrtc_transport =
       rtc::make_ref_counted<DtlsTransport>(std::move(cricket_transport));
   ASSERT_TRUE(webrtc_transport->internal());

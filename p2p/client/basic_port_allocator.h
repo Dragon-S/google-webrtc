@@ -70,6 +70,7 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
 
   PortAllocatorSession* CreateSessionInternal(
       absl::string_view content_name,
+      cricket::MediaType media_type,
       int component,
       absl::string_view ice_ufrag,
       absl::string_view ice_pwd) override;
@@ -128,6 +129,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession {
  public:
   BasicPortAllocatorSession(BasicPortAllocator* allocator,
                             absl::string_view content_name,
+                            cricket::MediaType media_type,
                             int component,
                             absl::string_view ice_ufrag,
                             absl::string_view ice_pwd);

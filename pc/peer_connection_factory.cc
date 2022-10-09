@@ -139,6 +139,13 @@ RtpCapabilities PeerConnectionFactory::GetRtpSenderCapabilities(
           GetDefaultEnabledRtpHeaderExtensions(media_engine()->video());
       return ToRtpCapabilities(cricket_codecs, extensions);
     }
+    case cricket::MEDIA_TYPE_SCREEN: {
+      cricket::VideoCodecs cricket_codecs;
+      cricket_codecs = media_engine()->video().send_codecs();
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->video());
+      return ToRtpCapabilities(cricket_codecs, extensions);
+    }
     case cricket::MEDIA_TYPE_DATA:
       return RtpCapabilities();
     case cricket::MEDIA_TYPE_UNSUPPORTED:
@@ -160,6 +167,13 @@ RtpCapabilities PeerConnectionFactory::GetRtpReceiverCapabilities(
       return ToRtpCapabilities(cricket_codecs, extensions);
     }
     case cricket::MEDIA_TYPE_VIDEO: {
+      cricket::VideoCodecs cricket_codecs =
+          media_engine()->video().recv_codecs(context_->use_rtx());
+      auto extensions =
+          GetDefaultEnabledRtpHeaderExtensions(media_engine()->video());
+      return ToRtpCapabilities(cricket_codecs, extensions);
+    }
+    case cricket::MEDIA_TYPE_SCREEN: {
       cricket::VideoCodecs cricket_codecs =
           media_engine()->video().recv_codecs(context_->use_rtx());
       auto extensions =

@@ -265,17 +265,17 @@ class DtlsSrtpTransportTest : public ::testing::Test,
 // transport finished the handshake, SRTP is set up.
 TEST_F(DtlsSrtpTransportTest, SetTransportsAfterHandshakeCompleteWithRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), nullptr, rtp_dtls2.get(), nullptr,
                          /*rtcp_mux_enabled=*/true);
 
   auto rtp_dtls3 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls4 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   CompleteDtlsHandshake(rtp_dtls3.get(), rtp_dtls4.get());
 
@@ -290,25 +290,25 @@ TEST_F(DtlsSrtpTransportTest, SetTransportsAfterHandshakeCompleteWithRtcpMux) {
 TEST_F(DtlsSrtpTransportTest,
        SetTransportsAfterHandshakeCompleteWithoutRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "video", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "video", cricket::MEDIA_TYPE_VIDEO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/false);
 
   auto rtp_dtls3 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls3 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls4 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls4 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   CompleteDtlsHandshake(rtp_dtls3.get(), rtp_dtls4.get());
   CompleteDtlsHandshake(rtcp_dtls3.get(), rtcp_dtls4.get());
 
@@ -322,13 +322,13 @@ TEST_F(DtlsSrtpTransportTest,
 // handshake is finished.
 TEST_F(DtlsSrtpTransportTest, SetTransportsBeforeHandshakeCompleteWithRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(),
@@ -345,13 +345,13 @@ TEST_F(DtlsSrtpTransportTest, SetTransportsBeforeHandshakeCompleteWithRtcpMux) {
 TEST_F(DtlsSrtpTransportTest,
        SetTransportsBeforeHandshakeCompleteWithoutRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/false);
@@ -368,9 +368,9 @@ TEST_F(DtlsSrtpTransportTest,
 // complete.
 TEST_F(DtlsSrtpTransportTest, DtlsSrtpResetAfterDtlsTransportChange) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), nullptr, rtp_dtls2.get(), nullptr,
                          /*rtcp_mux_enabled=*/true);
@@ -380,9 +380,9 @@ TEST_F(DtlsSrtpTransportTest, DtlsSrtpResetAfterDtlsTransportChange) {
   EXPECT_TRUE(dtls_srtp_transport2_->IsSrtpActive());
 
   auto rtp_dtls3 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls4 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   // The previous context is reset.
   dtls_srtp_transport1_->SetDtlsTransports(rtp_dtls3.get(), nullptr);
@@ -400,13 +400,13 @@ TEST_F(DtlsSrtpTransportTest, DtlsSrtpResetAfterDtlsTransportChange) {
 TEST_F(DtlsSrtpTransportTest,
        RtcpMuxEnabledAfterRtpTransportHandshakeComplete) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/false);
@@ -427,9 +427,9 @@ TEST_F(DtlsSrtpTransportTest,
 // sessions are updated with new encryped header extension IDs immediately.
 TEST_F(DtlsSrtpTransportTest, EncryptedHeaderExtensionIdUpdated) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), nullptr, rtp_dtls2.get(), nullptr,
                          /*rtcp_mux_enabled=*/true);
@@ -453,9 +453,9 @@ TEST_F(DtlsSrtpTransportTest, EncryptedHeaderExtensionIdUpdated) {
 // RTP DtlsTransport is ready.
 TEST_F(DtlsSrtpTransportTest, SignalReadyToSendFiredWithRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), nullptr, rtp_dtls2.get(), nullptr,
                          /*rtcp_mux_enabled=*/true);
@@ -469,13 +469,13 @@ TEST_F(DtlsSrtpTransportTest, SignalReadyToSendFiredWithRtcpMux) {
 // both the RTP and RTCP DtlsTransport are ready.
 TEST_F(DtlsSrtpTransportTest, SignalReadyToSendFiredWithoutRtcpMux) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/false);
@@ -496,13 +496,13 @@ TEST_F(DtlsSrtpTransportTest, SignalReadyToSendFiredWithoutRtcpMux) {
 // Regression test for bugs.webrtc.org/8996
 TEST_F(DtlsSrtpTransportTest, SrtpSessionNotResetWhenRtcpTransportRemoved) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/true);
@@ -525,13 +525,13 @@ TEST_F(DtlsSrtpTransportTest, SrtpSessionNotResetWhenRtcpTransportRemoved) {
 // the SRTP parameters with the `active_reset_srtp_params_` flag.
 TEST_F(DtlsSrtpTransportTest, ActivelyResetSrtpParams) {
   auto rtp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls1 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
   auto rtp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
   auto rtcp_dtls2 = std::make_unique<FakeDtlsTransport>(
-      "audio", cricket::ICE_CANDIDATE_COMPONENT_RTCP);
+      "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTCP);
 
   MakeDtlsSrtpTransports(rtp_dtls1.get(), rtcp_dtls1.get(), rtp_dtls2.get(),
                          rtcp_dtls2.get(), /*rtcp_mux_enabled=*/true);

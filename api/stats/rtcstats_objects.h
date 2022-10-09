@@ -470,6 +470,7 @@ class RTC_EXPORT RTCInboundRTPStreamStats final
   RTCStatsMember<uint32_t> frame_height;
   RTCStatsMember<double> frames_per_second;
   RTCStatsMember<uint32_t> frames_decoded;
+  RTCStatsMember<uint32_t> frames_rendered;
   RTCStatsMember<uint32_t> key_frames_decoded;
   RTCStatsMember<uint32_t> frames_dropped;
   RTCStatsMember<double> total_decode_time;

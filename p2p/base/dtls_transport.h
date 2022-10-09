@@ -116,6 +116,7 @@ class DtlsTransport : public DtlsTransportInternal {
 
   webrtc::DtlsTransportState dtls_state() const override;
   const std::string& transport_name() const override;
+  cricket::MediaType media_type() const override;
   int component() const override;
 
   // DTLS is active if a local certificate was set. Otherwise this acts in a

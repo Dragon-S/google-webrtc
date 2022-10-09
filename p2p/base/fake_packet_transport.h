@@ -54,6 +54,7 @@ class FakePacketTransport : public PacketTransportInternal {
 
   // Fake PacketTransportInternal implementation.
   const std::string& transport_name() const override { return transport_name_; }
+  cricket::MediaType media_type() const override { return media_type_; }
   bool writable() const override { return writable_; }
   bool receiving() const override { return receiving_; }
   int SendPacket(const char* data,
@@ -128,6 +129,7 @@ class FakePacketTransport : public PacketTransportInternal {
 
   CopyOnWriteBuffer last_sent_packet_;
   std::string transport_name_;
+  cricket::MediaType media_type_;
   FakePacketTransport* dest_ = nullptr;
   bool writable_ = false;
   bool receiving_ = false;

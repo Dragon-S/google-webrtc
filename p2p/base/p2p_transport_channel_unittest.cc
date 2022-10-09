@@ -432,9 +432,9 @@ class P2PTransportChannelTestBase : public ::testing::Test,
         IceParamsWithRenomination(kIceParams[0], renomination);
     IceParameters ice_ep2_cd1_ch =
         IceParamsWithRenomination(kIceParams[1], renomination);
-    ep1_.cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+    ep1_.cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                   ice_ep1_cd1_ch, ice_ep2_cd1_ch);
-    ep2_.cd1_.ch_ = CreateChannel(1, ICE_CANDIDATE_COMPONENT_DEFAULT,
+    ep2_.cd1_.ch_ = CreateChannel(1, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                   ice_ep2_cd1_ch, ice_ep1_cd1_ch);
     ep1_.cd1_.ch_->SetIceConfig(ep1_config);
     ep2_.cd1_.ch_->SetIceConfig(ep2_config);
@@ -453,6 +453,7 @@ class P2PTransportChannelTestBase : public ::testing::Test,
 
   std::unique_ptr<P2PTransportChannel> CreateChannel(
       int endpoint,
+      cricket::MediaType media_type,
       int component,
       const IceParameters& local_ice,
       const IceParameters& remote_ice) {
@@ -461,7 +462,7 @@ class P2PTransportChannelTestBase : public ::testing::Test,
     init.set_async_dns_resolver_factory(
         GetEndpoint(endpoint)->async_dns_resolver_factory_);
     init.set_field_trials(&field_trials_);
-    auto channel = P2PTransportChannel::Create("test content name", component,
+    auto channel = P2PTransportChannel::Create("test content name", media_type, component,
                                                std::move(init));
     channel->SignalReadyToSend.connect(
         this, &P2PTransportChannelTestBase::OnReadyToSend);
@@ -2228,7 +2229,7 @@ TEST_F(P2PTransportChannelTest, TurnToTurnPresumedWritable) {
                      kDefaultPortAllocatorFlags);
   // Only configure one channel so we can control when the remote candidate
   // is added.
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
   IceConfig config;
   config.presume_writable_when_fully_relayed = true;
@@ -2277,9 +2278,9 @@ TEST_F(P2PTransportChannelTest, TurnToPrflxPresumedWritable) {
   test_turn_server()->set_enable_permission_checks(false);
   IceConfig config;
   config.presume_writable_when_fully_relayed = true;
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
-  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[1], kIceParams[0]);
   ep1_ch1()->SetIceConfig(config);
   ep2_ch1()->SetIceConfig(config);
@@ -2316,9 +2317,9 @@ TEST_F(P2PTransportChannelTest, PresumedWritablePreferredOverUnreliable) {
                      kDefaultPortAllocatorFlags);
   IceConfig config;
   config.presume_writable_when_fully_relayed = true;
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
-  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[1], kIceParams[0]);
   ep1_ch1()->SetIceConfig(config);
   ep2_ch1()->SetIceConfig(config);
@@ -2354,7 +2355,7 @@ TEST_F(P2PTransportChannelTest, SignalReadyToSendWithPresumedWritable) {
                      kDefaultPortAllocatorFlags);
   // Only test one endpoint, so we can ensure the connection doesn't receive a
   // binding response and advance beyond being "presumed" writable.
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
   IceConfig config;
   config.presume_writable_when_fully_relayed = true;
@@ -2407,9 +2408,9 @@ TEST_F(P2PTransportChannelTest,
   // to configure the server to accept packets from an address we haven't
   // explicitly installed permission for.
   test_turn_server()->set_enable_permission_checks(false);
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
-  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(1)->cd1_.ch_ = CreateChannel(1, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[1], kIceParams[0]);
   // Don't signal candidates from channel 2, so that channel 1 sees the TURN
   // candidate as peer reflexive.
@@ -3609,7 +3610,7 @@ class P2PTransportChannelPingTest : public ::testing::Test,
 
 TEST_F(P2PTransportChannelPingTest, TestTriggeredChecks) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("trigger checks", 1, &pa);
+  P2PTransportChannel ch("trigger checks", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3633,7 +3634,7 @@ TEST_F(P2PTransportChannelPingTest, TestTriggeredChecks) {
 
 TEST_F(P2PTransportChannelPingTest, TestAllConnectionsPingedSufficiently) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("ping sufficiently", 1, &pa);
+  P2PTransportChannel ch("ping sufficiently", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3661,7 +3662,7 @@ TEST_F(P2PTransportChannelPingTest, TestStunPingIntervals) {
   int RTT_RANGE = 10;
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("TestChannel", 1, &pa);
+  P2PTransportChannel ch("TestChannel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3752,7 +3753,7 @@ TEST_F(P2PTransportChannelPingTest, PingingStartedAsSoonAsPossible) {
   rtc::ScopedFakeClock clock;
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("TestChannel", 1, &pa);
+  P2PTransportChannel ch("TestChannel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   ch.SetIceRole(ICEROLE_CONTROLLING);
   ch.SetIceParameters(kIceParams[0]);
   ch.MaybeStartGathering();
@@ -3788,7 +3789,7 @@ TEST_F(P2PTransportChannelPingTest, PingingStartedAsSoonAsPossible) {
 
 TEST_F(P2PTransportChannelPingTest, TestNoTriggeredChecksWhenWritable) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("trigger checks", 1, &pa);
+  P2PTransportChannel ch("trigger checks", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3813,7 +3814,7 @@ TEST_F(P2PTransportChannelPingTest, TestNoTriggeredChecksWhenWritable) {
 
 TEST_F(P2PTransportChannelPingTest, TestFailedConnectionNotPingable) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("Do not ping failed connections", 1, &pa);
+  P2PTransportChannel ch("Do not ping failed connections", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3830,7 +3831,7 @@ TEST_F(P2PTransportChannelPingTest, TestFailedConnectionNotPingable) {
 
 TEST_F(P2PTransportChannelPingTest, TestSignalStateChanged) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("state change", 1, &pa);
+  P2PTransportChannel ch("state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "1.1.1.1", 1, 1));
@@ -3851,7 +3852,7 @@ TEST_F(P2PTransportChannelPingTest, TestSignalStateChanged) {
 // ufrag, its pwd and generation will be set properly.
 TEST_F(P2PTransportChannelPingTest, TestAddRemoteCandidateWithVariousUfrags) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("add candidate", 1, &pa);
+  P2PTransportChannel ch("add candidate", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   // Add a candidate with a future ufrag.
@@ -3903,7 +3904,7 @@ TEST_F(P2PTransportChannelPingTest, TestAddRemoteCandidateWithVariousUfrags) {
 
 TEST_F(P2PTransportChannelPingTest, ConnectionResurrection) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("connection resurrection", 1, &pa);
+  P2PTransportChannel ch("connection resurrection", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
 
@@ -3956,7 +3957,7 @@ TEST_F(P2PTransportChannelPingTest, ConnectionResurrection) {
 TEST_F(P2PTransportChannelPingTest, TestReceivingStateChange) {
   rtc::ScopedFakeClock clock;
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   // Default receiving timeout and checking receiving interval should not be too
   // small.
@@ -3985,7 +3986,7 @@ TEST_F(P2PTransportChannelPingTest, TestReceivingStateChange) {
 // selected connection is writable.
 TEST_F(P2PTransportChannelPingTest, TestSelectConnectionBeforeNomination) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4074,7 +4075,7 @@ TEST_F(P2PTransportChannelPingTest, TestPingOnNomination) {
   webrtc::test::ScopedKeyValueConfig field_trials(
       "WebRTC-IceFieldTrials/send_ping_on_nomination_ice_controlled:true/");
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa, &field_trials);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.SetIceRole(ICEROLE_CONTROLLED);
@@ -4114,7 +4115,7 @@ TEST_F(P2PTransportChannelPingTest, TestPingOnSwitch) {
   webrtc::test::ScopedKeyValueConfig field_trials(
       "WebRTC-IceFieldTrials/send_ping_on_switch_ice_controlling:true/");
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa, &field_trials);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.SetIceRole(ICEROLE_CONTROLLING);
@@ -4151,7 +4152,7 @@ TEST_F(P2PTransportChannelPingTest, TestPingOnSelected) {
   webrtc::test::ScopedKeyValueConfig field_trials(
       "WebRTC-IceFieldTrials/send_ping_on_selected_ice_controlling:true/");
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa, &field_trials);
+  P2PTransportChannel ch("receiving state change",  cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.SetIceRole(ICEROLE_CONTROLLING);
@@ -4179,7 +4180,7 @@ TEST_F(P2PTransportChannelPingTest, TestPingOnSelected) {
 // appropriately.
 TEST_F(P2PTransportChannelPingTest, TestSelectConnectionFromUnknownAddress) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4256,7 +4257,7 @@ TEST_F(P2PTransportChannelPingTest, TestSelectConnectionFromUnknownAddress) {
 // the "selected connection".
 TEST_F(P2PTransportChannelPingTest, TestSelectConnectionBasedOnMediaReceived) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("receiving state change", 1, &pa);
+  P2PTransportChannel ch("receiving state change", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4309,7 +4310,7 @@ TEST_F(P2PTransportChannelPingTest,
   rtc::ScopedFakeClock clock;
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("SwitchSelectedConnection", 1, &pa);
+  P2PTransportChannel ch("SwitchSelectedConnection", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4358,7 +4359,7 @@ TEST_F(P2PTransportChannelPingTest,
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("SwitchSelectedConnection", 1, &pa);
+  P2PTransportChannel ch("SwitchSelectedConnection", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4398,7 +4399,7 @@ TEST_F(P2PTransportChannelPingTest,
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test", 1, &pa);
+  P2PTransportChannel ch("test", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4444,7 +4445,7 @@ TEST_F(P2PTransportChannelPingTest, TestEstimatedDisconnectedTime) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test", 1, &pa);
+  P2PTransportChannel ch("test", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4503,7 +4504,7 @@ TEST_F(P2PTransportChannelPingTest,
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test", 1, &pa);
+  P2PTransportChannel ch("test", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4521,7 +4522,7 @@ TEST_F(P2PTransportChannelPingTest,
   rtc::ScopedFakeClock clock;
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("SwitchSelectedConnection", 1, &pa);
+  P2PTransportChannel ch("SwitchSelectedConnection", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4562,7 +4563,7 @@ TEST_F(P2PTransportChannelPingTest,
 // an old one, it will be used to create a new connection.
 TEST_F(P2PTransportChannelPingTest, TestAddRemoteCandidateWithAddressReuse) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("candidate reuse", 1, &pa);
+  P2PTransportChannel ch("candidate reuse", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   const std::string host_address = "1.1.1.1";
@@ -4602,7 +4603,7 @@ TEST_F(P2PTransportChannelPingTest, TestDontPruneWhenWeak) {
   rtc::ScopedFakeClock clock;
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4638,7 +4639,7 @@ TEST_F(P2PTransportChannelPingTest, TestDontPruneWhenWeak) {
 TEST_F(P2PTransportChannelPingTest, TestDontPruneHighPriorityConnections) {
   rtc::ScopedFakeClock clock;
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4662,7 +4663,7 @@ TEST_F(P2PTransportChannelPingTest, TestGetState) {
   rtc::ScopedFakeClock clock;
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel",cricket::MEDIA_TYPE_VIDEO,  1, &pa);
   EXPECT_EQ(webrtc::IceTransportState::kNew, ch.GetIceTransportState());
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
@@ -4703,7 +4704,7 @@ TEST_F(P2PTransportChannelPingTest, TestConnectionPrunedAgain) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   IceConfig config = CreateIceConfig(1000, GATHER_ONCE);
   config.receiving_switching_delay = 800;
@@ -4753,7 +4754,7 @@ TEST_F(P2PTransportChannelPingTest, TestConnectionPrunedAgain) {
 TEST_F(P2PTransportChannelPingTest, TestDeleteConnectionsIfAllWriteTimedout) {
   rtc::ScopedFakeClock clock;
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
   // Have one connection only but later becomes write-time-out.
@@ -4785,7 +4786,7 @@ TEST_F(P2PTransportChannelPingTest, TestDeleteConnectionsIfAllWriteTimedout) {
 // the current port allocator session.
 TEST_F(P2PTransportChannelPingTest, TestStopPortAllocatorSessions) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa);
   PrepareChannel(&ch);
   ch.SetIceConfig(CreateIceConfig(2000, GATHER_ONCE));
   ch.MaybeStartGathering();
@@ -4818,7 +4819,7 @@ TEST_F(P2PTransportChannelPingTest, TestStopPortAllocatorSessions) {
 // the connections on it may still receive stun pings.
 TEST_F(P2PTransportChannelPingTest, TestIceRoleUpdatedOnRemovedPort) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
   // Starts with ICEROLE_CONTROLLING.
   PrepareChannel(&ch);
   IceConfig config = CreateIceConfig(1000, GATHER_CONTINUALLY);
@@ -4843,7 +4844,7 @@ TEST_F(P2PTransportChannelPingTest, TestIceRoleUpdatedOnRemovedPort) {
 // connections.
 TEST_F(P2PTransportChannelPingTest, TestIceRoleUpdatedOnPortAfterIceRestart) {
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
   // Starts with ICEROLE_CONTROLLING.
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
@@ -4867,7 +4868,7 @@ TEST_F(P2PTransportChannelPingTest, TestPortDestroyedAfterTimeoutAndPruned) {
   rtc::ScopedFakeClock fake_clock;
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT, &pa);
   PrepareChannel(&ch);
   ch.SetIceRole(ICEROLE_CONTROLLED);
   ch.MaybeStartGathering();
@@ -4896,7 +4897,7 @@ TEST_F(P2PTransportChannelPingTest, TestMaxOutstandingPingsFieldTrial) {
   webrtc::test::ScopedKeyValueConfig field_trials(
       "WebRTC-IceFieldTrials/max_outstanding_pings:3/");
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("max", 1, &pa, &field_trials);
+  P2PTransportChannel ch("max", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   ch.SetIceConfig(ch.config());
   PrepareChannel(&ch);
   ch.MaybeStartGathering();
@@ -4937,7 +4938,7 @@ class P2PTransportChannelMostLikelyToWorkFirstTest
       int stable_writable_connection_ping_interval,
       const webrtc::FieldTrialsView* field_trials = nullptr) {
     channel_.reset(
-        new P2PTransportChannel("checks", 1, allocator(), field_trials));
+        new P2PTransportChannel("checks", cricket::MEDIA_TYPE_VIDEO, 1, allocator(), field_trials));
     IceConfig config = channel_->config();
     config.prioritize_most_likely_candidate_pairs =
         prioritize_most_likely_to_work;
@@ -5164,7 +5165,7 @@ TEST(P2PTransportChannelResolverTest, HostnameCandidateIsResolved) {
   webrtc::IceTransportInit init;
   init.set_port_allocator(&allocator);
   init.set_async_dns_resolver_factory(&resolver_fixture);
-  auto channel = P2PTransportChannel::Create("tn", 0, std::move(init));
+  auto channel = P2PTransportChannel::Create("tn", cricket::MEDIA_TYPE_VIDEO, 0, std::move(init));
   Candidate hostname_candidate;
   SocketAddress hostname_address("fake.test", 1000);
   hostname_candidate.set_address(hostname_address);
@@ -5583,7 +5584,7 @@ TEST_F(P2PTransportChannelTest,
   // We use one endpoint to test the behavior of adding remote candidates, and
   // this endpoint only gathers relay candidates.
   ConfigureEndpoints(OPEN, OPEN, kOnlyRelayPorts, kDefaultPortAllocatorFlags);
-  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, ICE_CANDIDATE_COMPONENT_DEFAULT,
+  GetEndpoint(0)->cd1_.ch_ = CreateChannel(0, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_DEFAULT,
                                            kIceParams[0], kIceParams[1]);
   IceConfig config;
   // Start gathering and we should have only a single relay port.
@@ -5999,7 +6000,7 @@ TEST_F(P2PTransportChannelPingTest, TestInitialSelectDampening0) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa, &field_trials);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.MaybeStartGathering();
@@ -6023,7 +6024,7 @@ TEST_F(P2PTransportChannelPingTest, TestInitialSelectDampening) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa, &field_trials);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.MaybeStartGathering();
@@ -6047,7 +6048,7 @@ TEST_F(P2PTransportChannelPingTest, TestInitialSelectDampeningPingReceived) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa, &field_trials);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.MaybeStartGathering();
@@ -6074,7 +6075,7 @@ TEST_F(P2PTransportChannelPingTest, TestInitialSelectDampeningBoth) {
   clock.AdvanceTime(webrtc::TimeDelta::Seconds(1));
 
   FakePortAllocator pa(rtc::Thread::Current(), packet_socket_factory());
-  P2PTransportChannel ch("test channel", 1, &pa, &field_trials);
+  P2PTransportChannel ch("test channel", cricket::MEDIA_TYPE_VIDEO, 1, &pa, &field_trials);
   PrepareChannel(&ch);
   ch.SetIceConfig(ch.config());
   ch.MaybeStartGathering();
@@ -6104,6 +6105,7 @@ TEST(P2PTransportChannel, InjectIceController) {
   init.set_ice_controller_factory(&factory);
   auto dummy =
       P2PTransportChannel::Create("transport_name",
+                                  cricket::MEDIA_TYPE_VIDEO,
                                   /* component= */ 77, std::move(init));
 }
 
@@ -6155,7 +6157,7 @@ TEST_F(P2PTransportChannelPingTest, TestForgetLearnedState) {
   init.set_port_allocator(&pa);
   init.set_ice_controller_factory(&factory);
   auto ch =
-      P2PTransportChannel::Create("ping sufficiently", 1, std::move(init));
+      P2PTransportChannel::Create("ping sufficiently", cricket::MEDIA_TYPE_VIDEO, 1, std::move(init));
 
   PrepareChannel(ch.get());
   ch->MaybeStartGathering();

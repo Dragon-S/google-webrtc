@@ -34,6 +34,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   explicit FakeDtlsTransport(FakeIceTransport* ice_transport)
       : ice_transport_(ice_transport),
         transport_name_(ice_transport->transport_name()),
+        media_type_(ice_transport->media_type()),
         component_(ice_transport->component()),
         dtls_fingerprint_("", nullptr) {
     RTC_DCHECK(ice_transport_);
@@ -46,6 +47,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   explicit FakeDtlsTransport(std::unique_ptr<FakeIceTransport> ice)
       : owned_ice_transport_(std::move(ice)),
         transport_name_(owned_ice_transport_->transport_name()),
+        media_type_(owned_ice_transport_->media_type()),
         component_(owned_ice_transport_->component()),
         dtls_fingerprint_("", rtc::ArrayView<const uint8_t>()) {
     ice_transport_ = owned_ice_transport_.get();
@@ -57,13 +59,15 @@ class FakeDtlsTransport : public DtlsTransportInternal {
 
   // If this constructor is called, a new fake ICE transport will be created,
   // and this FakeDtlsTransport will take the ownership.
-  FakeDtlsTransport(const std::string& name, int component)
-      : FakeDtlsTransport(std::make_unique<FakeIceTransport>(name, component)) {
+  FakeDtlsTransport(const std::string& name, cricket::MediaType media_type, int component)
+      : FakeDtlsTransport(std::make_unique<FakeIceTransport>(name, media_type, component)) {
   }
   FakeDtlsTransport(const std::string& name,
+                    cricket::MediaType media_type,
                     int component,
                     rtc::Thread* network_thread)
       : FakeDtlsTransport(std::make_unique<FakeIceTransport>(name,
+                                                             media_type,
                                                              component,
                                                              network_thread)) {}
 
@@ -137,6 +141,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   // Fake DtlsTransportInternal implementation.
   webrtc::DtlsTransportState dtls_state() const override { return dtls_state_; }
   const std::string& transport_name() const override { return transport_name_; }
+  cricket::MediaType media_type() const override { return media_type_; }
   int component() const override { return component_; }
   const rtc::SSLFingerprint& dtls_fingerprint() const {
     return dtls_fingerprint_;
@@ -286,6 +291,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
   FakeIceTransport* ice_transport_;
   std::unique_ptr<FakeIceTransport> owned_ice_transport_;
   std::string transport_name_;
+  cricket::MediaType media_type_;
   int component_;
   FakeDtlsTransport* dest_ = nullptr;
   rtc::scoped_refptr<rtc::RTCCertificate> local_cert_;

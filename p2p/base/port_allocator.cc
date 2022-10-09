@@ -59,6 +59,7 @@ RelayServerConfig::RelayServerConfig(const RelayServerConfig&) = default;
 RelayServerConfig::~RelayServerConfig() = default;
 
 PortAllocatorSession::PortAllocatorSession(absl::string_view content_name,
+                                           cricket::MediaType media_type,
                                            int component,
                                            absl::string_view ice_ufrag,
                                            absl::string_view ice_pwd,
@@ -66,6 +67,7 @@ PortAllocatorSession::PortAllocatorSession(absl::string_view content_name,
     : flags_(flags),
       generation_(0),
       content_name_(content_name),
+      media_type_(media_type),
       component_(component),
       ice_ufrag_(ice_ufrag),
       ice_pwd_(ice_pwd) {
@@ -96,6 +98,14 @@ PortAllocator::PortAllocator()
     : flags_(kDefaultPortAllocatorFlags),
       min_port_(0),
       max_port_(0),
+      min_audio_port_(0),
+      max_audio_port_(0),
+      min_video_port_(0),
+      max_video_port_(0),
+      min_screen_port_(0),
+      max_screen_port_(0),
+      min_data_port_(0),
+      max_data_port_(0),
       max_ipv6_networks_(kDefaultMaxIPv6Networks),
       step_delay_(kDefaultStepDelay),
       allow_tcp_listen_(true),
@@ -197,7 +207,7 @@ bool PortAllocator::SetConfiguration(
     IceParameters iceCredentials =
         IceCredentialsIterator::CreateRandomIceCredentials();
     PortAllocatorSession* pooled_session =
-        CreateSessionInternal("", 0, iceCredentials.ufrag, iceCredentials.pwd);
+        CreateSessionInternal("", cricket::MediaType::MEDIA_TYPE_AUDIO, 0, iceCredentials.ufrag, iceCredentials.pwd);
     pooled_session->set_pooled(true);
     pooled_session->StartGettingPorts();
     pooled_sessions_.push_back(
@@ -208,12 +218,13 @@ bool PortAllocator::SetConfiguration(
 
 std::unique_ptr<PortAllocatorSession> PortAllocator::CreateSession(
     absl::string_view content_name,
+    cricket::MediaType media_type,
     int component,
     absl::string_view ice_ufrag,
     absl::string_view ice_pwd) {
   CheckRunOnValidThreadAndInitialized();
   auto session = std::unique_ptr<PortAllocatorSession>(
-      CreateSessionInternal(content_name, component, ice_ufrag, ice_pwd));
+      CreateSessionInternal(content_name, media_type, component, ice_ufrag, ice_pwd));
   session->SetCandidateFilter(candidate_filter());
   return session;
 }

@@ -113,7 +113,7 @@ class JsepTransport2Test : public ::testing::Test, public sigslot::has_slots<> {
   std::unique_ptr<JsepTransport> CreateJsepTransport2(bool rtcp_mux_enabled,
                                                       SrtpMode srtp_mode) {
     auto ice_internal = std::make_unique<FakeIceTransport>(
-        kTransportName, ICE_CANDIDATE_COMPONENT_RTP);
+        kTransportName, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_RTP);
     auto rtp_dtls_transport =
         std::make_unique<FakeDtlsTransport>(ice_internal.get());
     auto ice = CreateIceTransport(std::move(ice_internal));
@@ -122,7 +122,7 @@ class JsepTransport2Test : public ::testing::Test, public sigslot::has_slots<> {
     std::unique_ptr<FakeDtlsTransport> rtcp_dtls_transport;
     if (!rtcp_mux_enabled) {
       rtcp_ice_internal = std::make_unique<FakeIceTransport>(
-          kTransportName, ICE_CANDIDATE_COMPONENT_RTCP);
+          kTransportName, cricket::MEDIA_TYPE_VIDEO, ICE_CANDIDATE_COMPONENT_RTCP);
       rtcp_dtls_transport =
           std::make_unique<FakeDtlsTransport>(rtcp_ice_internal.get());
     }

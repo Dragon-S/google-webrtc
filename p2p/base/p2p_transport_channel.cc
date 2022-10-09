@@ -115,17 +115,18 @@ bool IceCredentialsChanged(absl::string_view old_ufrag,
 
 std::unique_ptr<P2PTransportChannel> P2PTransportChannel::Create(
     absl::string_view transport_name,
+    cricket::MediaType media_type,
     int component,
     webrtc::IceTransportInit init) {
   if (init.async_resolver_factory()) {
     return absl::WrapUnique(new P2PTransportChannel(
-        transport_name, component, init.port_allocator(), nullptr,
+        transport_name, media_type, component, init.port_allocator(), nullptr,
         std::make_unique<webrtc::WrappingAsyncDnsResolverFactory>(
             init.async_resolver_factory()),
         init.event_log(), init.ice_controller_factory(), init.field_trials()));
   } else {
     return absl::WrapUnique(new P2PTransportChannel(
-        transport_name, component, init.port_allocator(),
+        transport_name, media_type, component, init.port_allocator(),
         init.async_dns_resolver_factory(), nullptr, init.event_log(),
         init.ice_controller_factory(), init.field_trials()));
   }
@@ -133,10 +134,12 @@ std::unique_ptr<P2PTransportChannel> P2PTransportChannel::Create(
 
 P2PTransportChannel::P2PTransportChannel(
     absl::string_view transport_name,
+    cricket::MediaType media_type,
     int component,
     PortAllocator* allocator,
     const webrtc::FieldTrialsView* field_trials)
     : P2PTransportChannel(transport_name,
+                          media_type,
                           component,
                           allocator,
                           /* async_dns_resolver_factory= */ nullptr,
@@ -148,6 +151,7 @@ P2PTransportChannel::P2PTransportChannel(
 // Private constructor, called from Create()
 P2PTransportChannel::P2PTransportChannel(
     absl::string_view transport_name,
+    cricket::MediaType media_type,
     int component,
     PortAllocator* allocator,
     webrtc::AsyncDnsResolverFactoryInterface* async_dns_resolver_factory,
@@ -157,6 +161,7 @@ P2PTransportChannel::P2PTransportChannel(
     IceControllerFactoryInterface* ice_controller_factory,
     const webrtc::FieldTrialsView* field_trials)
     : transport_name_(transport_name),
+      media_type_(media_type),
       component_(component),
       allocator_(allocator),
       // If owned_dns_resolver_factory is given, async_dns_resolver_factory is
@@ -367,6 +372,11 @@ webrtc::IceTransportState P2PTransportChannel::GetIceTransportState() const {
 const std::string& P2PTransportChannel::transport_name() const {
   RTC_DCHECK_RUN_ON(network_thread_);
   return transport_name_;
+}
+
+cricket::MediaType P2PTransportChannel::media_type() const {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  return media_type_;
 }
 
 int P2PTransportChannel::component() const {
@@ -932,7 +942,7 @@ void P2PTransportChannel::MaybeStartGathering() {
       }
     } else {
       AddAllocatorSession(allocator_->CreateSession(
-          transport_name(), component(), ice_parameters_.ufrag,
+          transport_name(), media_type(), component(), ice_parameters_.ufrag,
           ice_parameters_.pwd));
       allocator_sessions_.back()->StartGettingPorts();
     }

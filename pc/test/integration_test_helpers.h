@@ -1361,9 +1361,10 @@ class MediaExpectations {
 
 class MockIceTransport : public webrtc::IceTransportInterface {
  public:
-  MockIceTransport(const std::string& name, int component)
+  MockIceTransport(const std::string& name, cricket::MediaType media_type, int component)
       : internal_(std::make_unique<cricket::FakeIceTransport>(
             name,
+            media_type,
             component,
             nullptr /* network_thread */)) {}
   ~MockIceTransport() = default;
@@ -1378,10 +1379,11 @@ class MockIceTransportFactory : public IceTransportFactory {
   ~MockIceTransportFactory() override = default;
   rtc::scoped_refptr<IceTransportInterface> CreateIceTransport(
       const std::string& transport_name,
+      cricket::MediaType media_type,
       int component,
       IceTransportInit init) {
     RecordIceTransportCreated();
-    return rtc::make_ref_counted<MockIceTransport>(transport_name, component);
+    return rtc::make_ref_counted<MockIceTransport>(transport_name, media_type, component);
   }
   MOCK_METHOD(void, RecordIceTransportCreated, ());
 };

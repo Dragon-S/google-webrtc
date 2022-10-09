@@ -177,10 +177,10 @@ class ChannelTest : public ::testing::Test, public sigslot::has_slots<> {
     } else {
       // Confirmed to work with KT_RSA and KT_ECDSA.
       fake_rtp_dtls_transport1_.reset(new cricket::FakeDtlsTransport(
-          "channel1", cricket::ICE_CANDIDATE_COMPONENT_RTP, network_thread_));
+          "channel1", cricket::MEDIA_TYPE_DATA, cricket::ICE_CANDIDATE_COMPONENT_RTP, network_thread_));
       if (!(flags1 & RTCP_MUX)) {
         fake_rtcp_dtls_transport1_.reset(new cricket::FakeDtlsTransport(
-            "channel1", cricket::ICE_CANDIDATE_COMPONENT_RTCP,
+            "channel1", cricket::MEDIA_TYPE_DATA, cricket::ICE_CANDIDATE_COMPONENT_RTCP,
             network_thread_));
       }
       if (flags1 & DTLS) {
@@ -203,10 +203,10 @@ class ChannelTest : public ::testing::Test, public sigslot::has_slots<> {
     } else {
       // Confirmed to work with KT_RSA and KT_ECDSA.
       fake_rtp_dtls_transport2_.reset(new cricket::FakeDtlsTransport(
-          "channel2", cricket::ICE_CANDIDATE_COMPONENT_RTP, network_thread_));
+          "channel2", cricket::MEDIA_TYPE_DATA, cricket::ICE_CANDIDATE_COMPONENT_RTP, network_thread_));
       if (!(flags2 & RTCP_MUX)) {
         fake_rtcp_dtls_transport2_.reset(new cricket::FakeDtlsTransport(
-            "channel2", cricket::ICE_CANDIDATE_COMPONENT_RTCP,
+            "channel2", cricket::MEDIA_TYPE_DATA, cricket::ICE_CANDIDATE_COMPONENT_RTCP,
             network_thread_));
       }
       if (flags2 & DTLS) {

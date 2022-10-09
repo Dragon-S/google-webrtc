@@ -127,7 +127,7 @@ class SctpTransportTest : public ::testing::Test {
   void AddDtlsTransport() {
     std::unique_ptr<cricket::DtlsTransportInternal> cricket_transport =
         std::make_unique<FakeDtlsTransport>(
-            "audio", cricket::ICE_CANDIDATE_COMPONENT_RTP);
+            "audio", cricket::MEDIA_TYPE_AUDIO, cricket::ICE_CANDIDATE_COMPONENT_RTP);
     dtls_transport_ =
         rtc::make_ref_counted<DtlsTransport>(std::move(cricket_transport));
     transport_->SetDtlsTransport(dtls_transport_);

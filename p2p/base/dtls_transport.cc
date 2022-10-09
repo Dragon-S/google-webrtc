@@ -158,6 +158,10 @@ const std::string& DtlsTransport::transport_name() const {
   return ice_transport_->transport_name();
 }
 
+cricket::MediaType DtlsTransport::media_type() const {
+  return ice_transport_->media_type();
+}
+
 int DtlsTransport::component() const {
   return component_;
 }

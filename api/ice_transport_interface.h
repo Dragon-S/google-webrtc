@@ -15,6 +15,7 @@
 
 #include "api/async_dns_resolver.h"
 #include "api/async_resolver_factory.h"
+#include "api/media_types.h"
 #include "api/rtc_error.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/scoped_refptr.h"
@@ -118,6 +119,7 @@ class IceTransportFactory {
   // peer connection should offer transports compatible with these assumptions.
   virtual rtc::scoped_refptr<IceTransportInterface> CreateIceTransport(
       const std::string& transport_name,
+      cricket::MediaType media_type,
       int component,
       IceTransportInit init) = 0;
 };
