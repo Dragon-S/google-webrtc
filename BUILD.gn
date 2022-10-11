@@ -483,6 +483,9 @@ if (!build_with_chromium) {
       "rtc_base",
       "sdk",
       "video",
+      "//third_party/jsoncpp:jsoncpp",
+      "rtc_base:rtc_json",
+      "rtc_base:checks",
     ]
 
     if (rtc_include_builtin_audio_codecs) {
