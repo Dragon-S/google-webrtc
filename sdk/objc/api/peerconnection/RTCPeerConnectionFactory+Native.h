@@ -80,6 +80,8 @@ NS_ASSUME_NONNULL_BEGIN
                       dependencies:(std::unique_ptr<webrtc::PeerConnectionDependencies>)dependencies
                           delegate:(nullable id<RTC_OBJC_TYPE(RTCPeerConnectionDelegate)>)delegate;
 
+- (instancetype)initWithNativePeerConnectionFactory:(
+    rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>)factory;
 @end
 
 NS_ASSUME_NONNULL_END
