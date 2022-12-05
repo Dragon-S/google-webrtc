@@ -103,6 +103,10 @@ rtclog2::FrameDecodedEvents::Codec ConvertToProtoFormat(VideoCodecType codec) {
       return rtclog2::FrameDecodedEvents::CODEC_AV1;
     case VideoCodecType::kVideoCodecH264:
       return rtclog2::FrameDecodedEvents::CODEC_H264;
+#ifndef DISABLE_H265
+    case VideoCodecType::kVideoCodecH265:
+      return rtclog2::FrameDecodedEvents::CODEC_H265;
+#endif
     case VideoCodecType::kVideoCodecH265:
       return rtclog2::FrameDecodedEvents::CODEC_H265;
     case VideoCodecType::kVideoCodecMultiplex:
