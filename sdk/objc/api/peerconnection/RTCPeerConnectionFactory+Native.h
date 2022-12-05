@@ -11,6 +11,7 @@
 #import "RTCPeerConnectionFactory.h"
 
 #include "api/scoped_refptr.h"
+#include "api/peer_connection_interface.h"
 
 namespace webrtc {
 
