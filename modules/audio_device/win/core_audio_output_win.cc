@@ -409,6 +409,7 @@ bool CoreAudioOutput::HandleStreamDisconnected() {
   if (InitPlayout() != 0) {
     return false;
   }
+
   if (StartPlayout() != 0) {
     return false;
   }
