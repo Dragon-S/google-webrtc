@@ -62,4 +62,7 @@ declare_args() {
   # If true, it assumes that //third_party/abseil-cpp is an available
   # dependency for googletest.
   gtest_enable_absl_printers = true
+
+  # Enable HEVC for WebRTC.
+  rtc_use_h265 = false
 }
