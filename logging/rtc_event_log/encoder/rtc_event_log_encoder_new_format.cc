@@ -107,8 +107,6 @@ rtclog2::FrameDecodedEvents::Codec ConvertToProtoFormat(VideoCodecType codec) {
     case VideoCodecType::kVideoCodecH265:
       return rtclog2::FrameDecodedEvents::CODEC_H265;
 #endif
-    case VideoCodecType::kVideoCodecH265:
-      return rtclog2::FrameDecodedEvents::CODEC_H265;
     case VideoCodecType::kVideoCodecMultiplex:
       // This codec type is afaik not used.
       return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
