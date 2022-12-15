@@ -208,6 +208,9 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
     return {Result::ERROR_TEMPORARY, nullptr};
   }
 
+  //获取最原始的窗口bounds
+  DesktopRect original_widnow_rect = original_rect;
+
   // Return a 1x1 black frame if the window is minimized or invisible on current
   // desktop, to match behavior on mace. Window can be temporarily invisible
   // during the transition of full screen mode on/off.
@@ -389,6 +392,8 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
       }
     }
   }
+
+  cropped_frame->set_original_window_rect(original_widnow_rect);
 
   return {Result::SUCCESS, std::move(cropped_frame)};
 }

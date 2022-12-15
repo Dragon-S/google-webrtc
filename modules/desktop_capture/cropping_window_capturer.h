@@ -66,6 +66,8 @@ class RTC_EXPORT CroppingWindowCapturer : public DesktopCapturer,
   // from (0, 0).
   virtual DesktopRect GetWindowRectInVirtualScreen() = 0;
 
+  virtual DesktopRect GetOriginalWindowRect() = 0;
+
   WindowId selected_window() const { return selected_window_; }
   WindowId excluded_window() const { return excluded_window_; }
   DesktopCapturer* window_capturer() const { return window_capturer_.get(); }

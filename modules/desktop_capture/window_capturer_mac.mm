@@ -190,7 +190,11 @@ void WindowCapturerMac::CaptureFrame() {
 
   frame->mutable_updated_region()->SetRect(
       DesktopRect::MakeSize(frame->size()));
-  frame->set_top_left(GetWindowBounds(on_screen_window).top_left());
+
+  DesktopRect original_window_rect = GetWindowBounds(on_screen_window);
+  frame->set_top_left(original_window_rect.top_left());
+
+  frame->set_original_window_rect(original_window_rect);
 
   float scale_factor = GetWindowScaleFactor(window_id_, frame->size());
   frame->set_dpi(DesktopVector(kStandardDPI * scale_factor, kStandardDPI * scale_factor));

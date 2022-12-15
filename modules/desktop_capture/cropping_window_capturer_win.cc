@@ -139,6 +139,7 @@ class CroppingWindowCapturerWin : public CroppingWindowCapturer {
  private:
   bool ShouldUseScreenCapturer() override;
   DesktopRect GetWindowRectInVirtualScreen() override;
+  DesktopRect GetOriginalWindowRect() override;
 
   // Returns either selected by user sourceId or sourceId provided by
   // FullScreenWindowDetector
@@ -280,6 +281,19 @@ bool CroppingWindowCapturerWin::ShouldUseScreenCapturer() {
                                    reinterpret_cast<HWND>(excluded_window()),
                                    content_rect, &window_capture_helper_);
   return context.IsTopWindow();
+}
+
+DesktopRect CroppingWindowCapturerWin::GetOriginalWindowRect() {
+  DesktopRect window_rect;
+  DesktopRect original_rect;
+  HWND hwnd = reinterpret_cast<HWND>(GetWindowToCapture());
+  if (!GetCroppedWindowRect(hwnd, /*avoid_cropping_border*/ false, &window_rect,
+                            &original_rect)) {
+    RTC_LOG(LS_WARNING) << "Failed to get window info: " << GetLastError();
+    return original_rect;
+  }
+
+  return original_rect;
 }
 
 DesktopRect CroppingWindowCapturerWin::GetWindowRectInVirtualScreen() {

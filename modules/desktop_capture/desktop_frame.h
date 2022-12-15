@@ -142,6 +142,11 @@ class RTC_EXPORT DesktopFrame {
     icc_profile_ = icc_profile;
   }
 
+  const DesktopRect& original_window_rect() const { return original_window_rect_; }
+  void set_original_window_rect(const DesktopRect& new_rect) {
+    original_window_rect_ = new_rect;
+  }
+
  protected:
   DesktopFrame(DesktopSize size,
                int stride,
@@ -165,6 +170,7 @@ class RTC_EXPORT DesktopFrame {
   int64_t capture_time_ms_;
   uint32_t capturer_id_;
   std::vector<uint8_t> icc_profile_;
+  DesktopRect original_window_rect_;
 };
 
 // A DesktopFrame that stores data in the heap.
