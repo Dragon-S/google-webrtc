@@ -201,6 +201,52 @@ class OpenOfficeApplicationHandler : public FullScreenMacApplicationHandler {
   }
 };
 
+class WPSOfficeApplicationHandler : public FullScreenMacApplicationHandler {
+ public:
+  WPSOfficeApplicationHandler(DesktopCapturer::SourceId sourceId)
+      : FullScreenMacApplicationHandler(sourceId, nullptr, false) {}
+
+  DesktopCapturer::SourceId FindFullScreenWindow(
+      const DesktopCapturer::SourceList& source_list,
+      int64_t timestamp) const override {
+    InvalidateCacheIfNeeded(source_list, timestamp,
+                            [&](const DesktopCapturer::Source& src) {
+                              return GetWindowOwnerPid(src.id) == owner_pid_;
+                            });
+
+    const auto original_window = GetSourceId();
+    const std::string original_title = GetWindowTitle(original_window);
+
+    // Check if we have only one document window, otherwise it's not possible
+    // to securely match a document window and a slide show window which has
+    // empty title.
+    if (std::any_of(cache_sources_.begin(), cache_sources_.end(),
+                    [&original_title](const DesktopCapturer::Source& src) {
+                      return src.title.length() && src.title != original_title;
+                    })) {
+      return kCGNullWindowID;
+    }
+
+    MacDesktopConfiguration desktop_config =
+        MacDesktopConfiguration::GetCurrent(
+            MacDesktopConfiguration::TopLeftOrigin);
+
+    // Looking for slide show window,
+    // it must be a full screen window with empty title
+    const auto slide_show_window = std::find_if(
+        cache_sources_.begin(), cache_sources_.end(), [&](const auto& src) {
+          return src.title.empty() &&
+                 IsWindowFullScreen(desktop_config, src.id);
+        });
+
+    if (slide_show_window == cache_sources_.end()) {
+      return kCGNullWindowID;
+    }
+
+    return slide_show_window->id;
+  }
+};
+
 }  // namespace
 
 std::unique_ptr<FullScreenApplicationHandler>
@@ -224,6 +270,8 @@ CreateFullScreenMacApplicationHandler(DesktopCapturer::SourceId sourceId) {
       predicate = equal_title_predicate;
     } else if (owner_name == "OpenOffice") {
       return std::make_unique<OpenOfficeApplicationHandler>(sourceId);
+    } else if (owner_name == "WPS Office") {
+      return std::make_unique<WPSOfficeApplicationHandler>(sourceId);
     }
 
     if (predicate) {
