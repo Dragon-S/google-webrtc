@@ -74,6 +74,11 @@ MacDisplayConfiguration GetConfigurationForScreen(NSScreen* screen) {
   // Determine if the display is built-in or external.
   display_config.is_builtin = CGDisplayIsBuiltin(display_config.id);
 
+  //12.0以上系统，获取刘海高度
+  if (@available(macOS 12, *)) {
+    display_config.notch_hight = [screen safeAreaInsets].top + 5;
+  }
+
   return display_config;
 }
 

@@ -44,6 +44,8 @@ struct MacDisplayConfiguration {
 
   // Display type, built-in or external.
   bool is_builtin;
+
+  float notch_hight = 0.0f;
 };
 
 typedef std::vector<MacDisplayConfiguration> MacDisplayConfigurations;

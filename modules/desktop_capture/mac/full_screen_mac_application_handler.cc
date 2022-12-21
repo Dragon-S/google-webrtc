@@ -236,7 +236,7 @@ class WPSOfficeApplicationHandler : public FullScreenMacApplicationHandler {
     const auto slide_show_window = std::find_if(
         cache_sources_.begin(), cache_sources_.end(), [&](const auto& src) {
           return src.title.empty() &&
-                 IsWindowFullScreen(desktop_config, src.id);
+                 IsWindowFullScreenWPS(desktop_config, src.id);
         });
 
     if (slide_show_window == cache_sources_.end()) {

@@ -269,6 +269,43 @@ bool IsWindowFullScreen(const MacDesktopConfiguration& desktop_config,
   return fullscreen;
 }
 
+// Returns true if the window is occupying a full screen.
+bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
+                           CFDictionaryRef window) {
+  bool fullscreen = false;
+  CFDictionaryRef bounds_ref = reinterpret_cast<CFDictionaryRef>(
+      CFDictionaryGetValue(window, kCGWindowBounds));
+
+  CGRect bounds;
+  if (bounds_ref &&
+      CGRectMakeWithDictionaryRepresentation(bounds_ref, &bounds)) {
+    for (MacDisplayConfigurations::const_iterator it =
+             desktop_config.displays.begin();
+         it != desktop_config.displays.end(); it++) {
+      if (it->bounds.equals(
+              DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y,
+                                    bounds.size.width, bounds.size.height)) ||
+          (it->notch_hight != 0.0 && it->bounds.equals(
+              DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y - it->notch_hight,
+                                    bounds.size.width, bounds.size.height + it->notch_hight)))) {
+        fullscreen = true;
+        break;
+      }
+    }
+  }
+
+  return fullscreen;
+}
+
+bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
+                           CGWindowID id) {
+  bool fullscreen = false;
+  GetWindowRef(id, [&](CFDictionaryRef window) {
+    fullscreen = IsWindowFullScreenWPS(desktop_config, window);
+  });
+  return fullscreen;
+}
+
 bool IsWindowOnScreen(CFDictionaryRef window) {
   CFBooleanRef on_screen = reinterpret_cast<CFBooleanRef>(
       CFDictionaryGetValue(window, kCGWindowIsOnscreen));
