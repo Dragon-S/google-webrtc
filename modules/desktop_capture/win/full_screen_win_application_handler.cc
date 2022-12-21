@@ -114,13 +114,15 @@ class FullScreenPowerPointHandler : public FullScreenApplicationHandler {
       return 0;
 
     const auto original_document = GetDocumentFromEditorTitle(original_window);
+    const std::string original_document_ex = "[" + original_document + "]";
 
     for (const auto& source : powerpoint_windows) {
       HWND window = reinterpret_cast<HWND>(source.id);
 
       // Looking for slide show window for the same document
+      const std::string slide_show_title = GetDocumentFromSlideShowTitle(window);
       if (GetWindowType(window) != WindowType::kSlideShow ||
-          GetDocumentFromSlideShowTitle(window) != original_document) {
+          (slide_show_title != original_document && slide_show_title != original_document_ex)) {
         continue;
       }
 
