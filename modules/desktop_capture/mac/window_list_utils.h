@@ -45,14 +45,6 @@ bool IsWindowFullScreen(const MacDesktopConfiguration& desktop_config,
 bool IsWindowFullScreen(const MacDesktopConfiguration& desktop_config,
                         CGWindowID id);
 
-// Returns true if the window is occupying a full screen.
-bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
-                           CFDictionaryRef window);
-
-// Returns true if the window is occupying a full screen.
-bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
-                           CGWindowID id);
-
 // Returns true if the `window` is on screen. This function returns false if
 // native APIs fail.
 bool IsWindowOnScreen(CFDictionaryRef window);

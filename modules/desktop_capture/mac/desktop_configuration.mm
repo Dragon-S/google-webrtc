@@ -76,7 +76,7 @@ MacDisplayConfiguration GetConfigurationForScreen(NSScreen* screen) {
 
   //12.0以上系统，获取刘海高度
   if (@available(macOS 12, *)) {
-    display_config.notch_hight = [screen safeAreaInsets].top + 5;
+    display_config.notch_hight = [screen safeAreaInsets].top;
   }
 
   return display_config;

@@ -248,9 +248,18 @@ bool IsWindowFullScreen(const MacDesktopConfiguration& desktop_config,
     for (MacDisplayConfigurations::const_iterator it =
              desktop_config.displays.begin();
          it != desktop_config.displays.end(); it++) {
+        //正常的notch_hight = 32，但是wps的是37
+        float notch_hight = it->notch_hight;
+        const std::string owner_name = GetWindowOwnerName(window);
+        if (owner_name.find("WPS Office") == 0) {
+          notch_hight += 5.0;
+        }
       if (it->bounds.equals(
               DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y,
-                                    bounds.size.width, bounds.size.height))) {
+                                    bounds.size.width, bounds.size.height)) ||
+          (notch_hight != 0.0 && it->bounds.equals(
+              DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y - notch_hight,
+                                    bounds.size.width, bounds.size.height + notch_hight)))) {
         fullscreen = true;
         break;
       }
@@ -265,43 +274,6 @@ bool IsWindowFullScreen(const MacDesktopConfiguration& desktop_config,
   bool fullscreen = false;
   GetWindowRef(id, [&](CFDictionaryRef window) {
     fullscreen = IsWindowFullScreen(desktop_config, window);
-  });
-  return fullscreen;
-}
-
-// Returns true if the window is occupying a full screen.
-bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
-                           CFDictionaryRef window) {
-  bool fullscreen = false;
-  CFDictionaryRef bounds_ref = reinterpret_cast<CFDictionaryRef>(
-      CFDictionaryGetValue(window, kCGWindowBounds));
-
-  CGRect bounds;
-  if (bounds_ref &&
-      CGRectMakeWithDictionaryRepresentation(bounds_ref, &bounds)) {
-    for (MacDisplayConfigurations::const_iterator it =
-             desktop_config.displays.begin();
-         it != desktop_config.displays.end(); it++) {
-      if (it->bounds.equals(
-              DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y,
-                                    bounds.size.width, bounds.size.height)) ||
-          (it->notch_hight != 0.0 && it->bounds.equals(
-              DesktopRect::MakeXYWH(bounds.origin.x, bounds.origin.y - it->notch_hight,
-                                    bounds.size.width, bounds.size.height + it->notch_hight)))) {
-        fullscreen = true;
-        break;
-      }
-    }
-  }
-
-  return fullscreen;
-}
-
-bool IsWindowFullScreenWPS(const MacDesktopConfiguration& desktop_config,
-                           CGWindowID id) {
-  bool fullscreen = false;
-  GetWindowRef(id, [&](CFDictionaryRef window) {
-    fullscreen = IsWindowFullScreenWPS(desktop_config, window);
   });
   return fullscreen;
 }
