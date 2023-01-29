@@ -615,6 +615,7 @@ SEncParamExt H264EncoderImpl::CreateEncoderParams(size_t i) const {
   // equivalent to CONSTANT_ID.
   encoder_params.eSpsPpsIdStrategy = SPS_LISTING;
   encoder_params.uiMaxNalSize = 0;
+  encoder_params.iEntropyCodingModeFlag = 1;
   // Threading model: use auto.
   //  0: auto (dynamic imp. internal encoder)
   //  1: single thread (default value)
