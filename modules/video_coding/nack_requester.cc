@@ -25,8 +25,8 @@ namespace webrtc {
 namespace {
 constexpr int kMaxPacketAge = 10'000;
 constexpr int kMaxNackPackets = 1000;
-constexpr TimeDelta kDefaultRtt = TimeDelta::Millis(100);
-constexpr int kMaxNackRetries = 10;
+constexpr TimeDelta kDefaultRtt = TimeDelta::Millis(25); /* 参数和1.0保持一致 */
+constexpr int kMaxNackRetries = 40;
 constexpr int kMaxReorderedPackets = 128;
 constexpr int kNumReorderingBuckets = 10;
 constexpr TimeDelta kDefaultSendNackDelay = TimeDelta::Zero();
