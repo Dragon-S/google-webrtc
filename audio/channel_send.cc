@@ -540,6 +540,12 @@ void ChannelSend::StartSend() {
   int ret = rtp_rtcp_->SetSendingStatus(true);
   RTC_DCHECK_EQ(0, ret);
 
+  audio_coding_->ModifyEncoder([&](std::unique_ptr<AudioEncoder>* encoder) {
+    if(*encoder) {
+      (*encoder)->SetDtx(true);
+    }
+  });
+
   // It is now OK to start processing on the encoder task queue.
   encoder_queue_.PostTask([this] {
     RTC_DCHECK_RUN_ON(&encoder_queue_);
