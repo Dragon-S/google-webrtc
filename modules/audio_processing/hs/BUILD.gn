@@ -1,0 +1,31 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_static_library("hs") {
+  visibility = [ "*" ]
+  sources = [
+      "hs_common.h",
+      "hs_fft_1024.h",
+      "hs_fft_1024.cc",
+      "notch_filter.h",
+      "notch_filter.cc",
+      "howling_suppressor.h",
+      "howling_suppressor.cc",
+      "howling_suppression_impl.h",
+      "howling_suppression_impl.cc",
+  ]
+
+  defines = []
+
+  if (rtc_build_with_neon && current_cpu != "arm64") {
+    suppressed_configs += [ "//build/config/compiler:compiler_arm_fpu" ]
+    cflags = [ "-mfpu=neon" ]
+  }
+}

@@ -167,7 +167,8 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
     bool voice_activity_detector_enabled,
     bool gain_adjustment_enabled,
     bool echo_controller_enabled,
-    bool transient_suppressor_enabled) {
+    bool transient_suppressor_enabled,
+    bool howling_suppressor_enabled) {
   bool changed = false;
   changed |= (high_pass_filter_enabled != high_pass_filter_enabled_);
   changed |=
@@ -181,6 +182,7 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
   changed |= (gain_adjustment_enabled != gain_adjustment_enabled_);
   changed |= (echo_controller_enabled != echo_controller_enabled_);
   changed |= (transient_suppressor_enabled != transient_suppressor_enabled_);
+  changed |= (howling_suppressor_enabled != howling_suppressor_enabled_);
   if (changed) {
     high_pass_filter_enabled_ = high_pass_filter_enabled;
     mobile_echo_controller_enabled_ = mobile_echo_controller_enabled;
@@ -191,6 +193,7 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
     gain_adjustment_enabled_ = gain_adjustment_enabled;
     echo_controller_enabled_ = echo_controller_enabled;
     transient_suppressor_enabled_ = transient_suppressor_enabled;
+    howling_suppressor_enabled_ = howling_suppressor_enabled;
   }
 
   changed |= first_update_;
@@ -213,7 +216,7 @@ bool AudioProcessingImpl::SubmoduleStates::CaptureMultiBandProcessingActive(
     bool ec_processing_active) const {
   return high_pass_filter_enabled_ || mobile_echo_controller_enabled_ ||
          noise_suppressor_enabled_ || adaptive_gain_controller_enabled_ ||
-         (echo_controller_enabled_ && ec_processing_active);
+         howling_suppressor_enabled_ || (echo_controller_enabled_ && ec_processing_active);
 }
 
 bool AudioProcessingImpl::SubmoduleStates::CaptureFullBandProcessingActive()
@@ -402,6 +405,7 @@ void AudioProcessingImpl::InitializeLocked() {
   InitializeGainController2(/*config_has_changed=*/true);
   InitializeVoiceActivityDetector(/*config_has_changed=*/true);
   InitializeNoiseSuppressor();
+  InitializeHowlingSuppressor();
   InitializeAnalyzer();
   InitializePostProcessor();
   InitializePreProcessor();
@@ -536,6 +540,9 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
       config_.noise_suppression.enabled != config.noise_suppression.enabled ||
       config_.noise_suppression.level != config.noise_suppression.level;
 
+  const bool hs_config_changed =
+      config_.howling_suppression.enabled != config.howling_suppression.enabled;
+
   const bool ts_config_changed = config_.transient_suppression.enabled !=
                                  config.transient_suppression.enabled;
 
@@ -579,6 +586,10 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
 
   if (pre_amplifier_config_changed || gain_adjustment_config_changed) {
     InitializeCaptureLevelsAdjuster();
+  }
+
+  if (hs_config_changed) {
+    InitializeHowlingSuppressor();
   }
 
   // Reinitialization must happen after all submodule configuration to avoid
@@ -1251,6 +1262,11 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
         capture_buffer, /*stream_has_echo*/ false));
   }
 
+  if (submodules_.howling_suppressor) {
+    RETURN_ON_ERR(submodules_.howling_suppressor->ProcessCaptureAudio(
+    capture_buffer));
+  }
+
   if (submodule_states_.CaptureMultiBandProcessingPresent() &&
       SampleRateSupportsMultiBand(
           capture_nonlocked_.capture_processing_format.sample_rate_hz())) {
@@ -1736,7 +1752,8 @@ bool AudioProcessingImpl::UpdateActiveSubmoduleStates() {
       !!submodules_.gain_controller2, !!submodules_.voice_activity_detector,
       config_.pre_amplifier.enabled || config_.capture_level_adjustment.enabled,
       capture_nonlocked_.echo_controller_enabled,
-      !!submodules_.transient_suppressor);
+      !!submodules_.transient_suppressor,
+      !!submodules_.howling_suppressor);
 }
 
 void AudioProcessingImpl::InitializeTransientSuppressor() {
@@ -2018,6 +2035,18 @@ void AudioProcessingImpl::InitializeCaptureLevelsAdjuster() {
   } else {
     submodules_.capture_levels_adjuster.reset();
   }
+}
+
+void AudioProcessingImpl::InitializeHowlingSuppressor() {
+  submodules_.howling_suppressor.reset();
+
+  // I can not find who called applyConfig function
+  // Just force enable hs here
+  // if (config_.howling_suppression.enabled) {
+  submodules_.howling_suppressor = std::make_unique<HowlingSuppressionImpl>();
+  submodules_.howling_suppressor->Enable(true);
+  submodules_.howling_suppressor->Initialize(num_proc_channels(), proc_sample_rate_hz());
+  // }
 }
 
 void AudioProcessingImpl::InitializeResidualEchoDetector() {

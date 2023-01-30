@@ -48,6 +48,8 @@ struct RTC_EXPORT AudioOptions {
   absl::optional<bool> auto_gain_control;
   // Audio processing to filter out background noise.
   absl::optional<bool> noise_suppression;
+  // Audio processing to remove howling noise
+  absl::optional<bool> howling_suppression;
   // Audio processing to remove background noise of lower frequencies.
   absl::optional<bool> highpass_filter;
   // Audio processing to swap the left and right channels.

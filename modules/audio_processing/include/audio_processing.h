@@ -226,6 +226,11 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       bool analyze_linear_aec_output_when_available = false;
     } noise_suppression;
 
+    // Enables howling suppression
+    struct HowlingSuppression {
+      bool enabled = false;
+    } howling_suppression;
+
     // Enables transient suppression.
     struct TransientSuppression {
       bool enabled = false;

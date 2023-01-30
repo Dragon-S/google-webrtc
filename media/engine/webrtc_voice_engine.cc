@@ -392,6 +392,7 @@ void WebRtcVoiceEngine::Init() {
 #else
     options.noise_suppression = true;
 #endif
+    options.howling_suppression = true;
     options.highpass_filter = true;
     options.stereo_swapping = false;
     options.audio_jitter_buffer_max_packets = 200;
@@ -569,6 +570,11 @@ void WebRtcVoiceEngine::ApplyOptions(const AudioOptions& options_in) {
     apm_config.noise_suppression.enabled = enabled;
     apm_config.noise_suppression.level =
         webrtc::AudioProcessing::Config::NoiseSuppression::Level::kHigh;
+  }
+
+  if (options.howling_suppression) {
+    RTC_LOG(LS_INFO) << "Howling suppression is enabled";
+    apm_config.howling_suppression.enabled = true;
   }
 
   ap->ApplyConfig(apm_config);

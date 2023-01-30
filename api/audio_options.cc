@@ -44,6 +44,7 @@ void AudioOptions::SetAll(const AudioOptions& change) {
 #endif
   SetFrom(&auto_gain_control, change.auto_gain_control);
   SetFrom(&noise_suppression, change.noise_suppression);
+  SetFrom(&howling_suppression, change.howling_suppression);
   SetFrom(&highpass_filter, change.highpass_filter);
   SetFrom(&stereo_swapping, change.stereo_swapping);
   SetFrom(&audio_jitter_buffer_max_packets,
@@ -65,6 +66,7 @@ bool AudioOptions::operator==(const AudioOptions& o) const {
 #endif
          auto_gain_control == o.auto_gain_control &&
          noise_suppression == o.noise_suppression &&
+         howling_suppression == o.howling_suppression &&
          highpass_filter == o.highpass_filter &&
          stereo_swapping == o.stereo_swapping &&
          audio_jitter_buffer_max_packets == o.audio_jitter_buffer_max_packets &&
@@ -89,6 +91,7 @@ std::string AudioOptions::ToString() const {
 #endif
   ToStringIfSet(&result, "agc", auto_gain_control);
   ToStringIfSet(&result, "ns", noise_suppression);
+  ToStringIfSet(&result, "hs", howling_suppression);
   ToStringIfSet(&result, "hf", highpass_filter);
   ToStringIfSet(&result, "swap", stereo_swapping);
   ToStringIfSet(&result, "audio_jitter_buffer_max_packets",

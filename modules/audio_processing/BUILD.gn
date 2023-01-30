@@ -209,6 +209,7 @@ rtc_library("audio_processing") {
     "ns",
     "transient:transient_suppressor_api",
     "vad",
+    "hs",
   ]
   absl_deps = [
     "//third_party/abseil-cpp/absl/strings",

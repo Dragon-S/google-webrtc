@@ -39,6 +39,7 @@
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "modules/audio_processing/ns/noise_suppressor.h"
 #include "modules/audio_processing/optionally_built_submodule_creators.h"
+#include "modules/audio_processing/hs/howling_suppression_impl.h"
 #include "modules/audio_processing/render_queue_item_verifier.h"
 #include "modules/audio_processing/rms_level.h"
 #include "modules/audio_processing/transient/transient_suppressor.h"
@@ -215,7 +216,8 @@ class AudioProcessingImpl : public AudioProcessing {
                 bool voice_activity_detector_enabled,
                 bool gain_adjustment_enabled,
                 bool echo_controller_enabled,
-                bool transient_suppressor_enabled);
+                bool transient_suppressor_enabled,
+                bool howling_suppresor_enabled);
     bool CaptureMultiBandSubModulesActive() const;
     bool CaptureMultiBandProcessingPresent() const;
     bool CaptureMultiBandProcessingActive(bool ec_processing_active) const;
@@ -239,6 +241,7 @@ class AudioProcessingImpl : public AudioProcessing {
     bool gain_adjustment_enabled_ = false;
     bool echo_controller_enabled_ = false;
     bool transient_suppressor_enabled_ = false;
+    bool howling_suppressor_enabled_ = false;
     bool first_update_ = true;
   };
 
@@ -286,6 +289,7 @@ class AudioProcessingImpl : public AudioProcessing {
   void InitializeVoiceActivityDetector(bool config_has_changed)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeNoiseSuppressor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
+  void InitializeHowlingSuppressor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeCaptureLevelsAdjuster()
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializePostProcessor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
@@ -410,6 +414,7 @@ class AudioProcessingImpl : public AudioProcessing {
     std::unique_ptr<EchoControl> echo_controller;
     std::unique_ptr<EchoControlMobileImpl> echo_control_mobile;
     std::unique_ptr<NoiseSuppressor> noise_suppressor;
+    std::unique_ptr<HowlingSuppressionImpl> howling_suppressor;
     std::unique_ptr<TransientSuppressor> transient_suppressor;
     std::unique_ptr<CaptureLevelsAdjuster> capture_levels_adjuster;
   } submodules_;

@@ -143,6 +143,7 @@ std::string AudioProcessing::Config::ToString() const {
           << " }, noise_suppression: { enabled: " << noise_suppression.enabled
           << ", level: "
           << NoiseSuppressionLevelToString(noise_suppression.level)
+          << " }, howling_suppression : { enabled: " << howling_suppression.enabled
           << " }, transient_suppression: { enabled: "
           << transient_suppression.enabled
           << " }, gain_controller1: { enabled: " << gain_controller1.enabled
