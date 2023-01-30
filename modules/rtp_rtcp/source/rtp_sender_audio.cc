@@ -60,9 +60,23 @@ RTPSenderAudio::RTPSenderAudio(Clock* clock, RTPSender* rtp_sender)
           !absl::StartsWith(field_trials_.Lookup(kIncludeCaptureClockOffset),
                             "Disabled")) {
   RTC_DCHECK(clock_);
+#ifdef RS_FEC
+  rs_encoder_ = new RsFecEncoder;
+  int n = 8;
+  rs_encoder_->Init(n,48000);
+  rs_encoder_->SetFECStatus(false);
+#endif // RS_FEC
 }
 
-RTPSenderAudio::~RTPSenderAudio() {}
+RTPSenderAudio::~RTPSenderAudio() {
+#ifdef RS_FEC
+  if(rs_encoder_ != NULL)
+  {
+    delete rs_encoder_;
+  }
+#endif // RS_FEC
+}
+
 
 int32_t RTPSenderAudio::RegisterAudioPayload(absl::string_view payload_name,
                                              const int8_t payload_type,
@@ -166,6 +180,16 @@ bool RTPSenderAudio::SendAudio(AudioFrameType frame_type,
   TRACE_EVENT_ASYNC_STEP1("webrtc", "Audio", rtp_timestamp, "Send", "type",
                           FrameTypeToString(frame_type));
 
+#ifdef RS_FEC
+  if(payload_type == RS_FEC_PAYLOAD_TYPE) {
+    if(rs_encoder_->GetFECStatus() == false)
+    {
+      rs_encoder_->SetFECStatus(true);
+      rs_encoder_->SetN(8);
+      rs_encoder_->SetPt(RS_FEC_PAYLOAD_TYPE);
+    }
+  }
+#endif // RS_FEC
   // From RFC 4733:
   // A source has wide latitude as to how often it sends event updates. A
   // natural interval is the spacing between non-event audio packets. [...]
@@ -294,10 +318,35 @@ bool RTPSenderAudio::SendAudio(AudioFrameType frame_type,
     }
   }
 
+#ifdef RS_FEC
+  if (rs_encoder_->GetFECStatus()){//
+    uint8_t data_buffer[IP_PACKET_SIZE];
+    int8_t  pt = rs_encoder_->GetPt();
+    size_t fec_payload_size = rs_encoder_->Encode(data_buffer, IP_PACKET_SIZE, payload_data, payload_size, payload_type,rtp_timestamp);
+    uint8_t* payload = packet->AllocatePayload(fec_payload_size);
+    if (!payload) {
+      return false;
+    }
+    if (fec_payload_size == 0) {
+      RTC_LOG(LS_ERROR) << "rs fec encode failed with " << payload_size;
+      return true;
+    }
+    memcpy(payload, data_buffer, fec_payload_size);
+    packet->SetPayloadType(pt);
+    packet->SetMarker(false);
+  }
+  else {
+    uint8_t* payload = packet->AllocatePayload(payload_size);
+    if (!payload)  // Too large payload buffer.
+      return false;
+    memcpy(payload, payload_data, payload_size);
+  }
+#else
   uint8_t* payload = packet->AllocatePayload(payload_size);
   if (!payload)  // Too large payload buffer.
     return false;
   memcpy(payload, payload_data, payload_size);
+#endif // RS_FEC
 
   {
     MutexLock lock(&send_audio_mutex_);
@@ -312,8 +361,68 @@ bool RTPSenderAudio::SendAudio(AudioFrameType frame_type,
   if (first_packet_sent_()) {
     RTC_LOG(LS_INFO) << "First audio RTP packet sent to pacer";
   }
+
+#ifdef RS_FEC
+  if (rs_encoder_->GetFECStatus()){//
+      while(rs_encoder_->IsNeedSendRedPkg()){
+      std::unique_ptr<RtpPacketToSend> packet_red = rtp_sender_->AllocatePacket();
+      packet_red->SetMarker(MarkerBit(frame_type, payload_type));
+      packet_red->SetPayloadType(payload_type);
+      packet_red->SetTimestamp(rtp_timestamp);
+      packet_red->set_capture_time(clock_->CurrentTime());
+      // Update audio level extension, if included.
+      packet_red->SetExtension<AudioLevel>(frame_type == AudioFrameType::kAudioFrameSpeech,
+                                        audio_level_dbov);
+
+      uint8_t data_buffer[IP_PACKET_SIZE];
+      int8_t  pt = rs_encoder_->GetPt();
+      size_t fec_payload_size = rs_encoder_->Encode(data_buffer, IP_PACKET_SIZE, NULL, 0, payload_type,rtp_timestamp);
+      uint8_t* payload = packet_red->AllocatePayload(fec_payload_size);
+      if (!payload) {
+        return false;
+      }
+      if (fec_payload_size == 0) {
+        RTC_LOG(LS_ERROR) << "rs fec encode failed with " << payload_size;
+        return true;
+      }
+      memcpy(payload, data_buffer, fec_payload_size);
+      packet_red->SetPayloadType(pt);
+      packet_red->SetMarker(false);
+
+      // if (!rtp_sender_->AssignSequenceNumber(packet_red.get()))
+      //   return false;
+
+      TRACE_EVENT_ASYNC_END2("webrtc", "Audio", rtp_timestamp, "timestamp",
+                              packet_red->Timestamp(), "seqnum",
+                              packet_red->SequenceNumber());
+
+      packet_red->set_packet_type(RtpPacketMediaType::kAudio);
+      packet_red->set_allow_retransmission(false);
+      if(!rtp_sender_->SendToNetwork( std::move(packet_red)))
+        //  std::move(packet_red), kDontRetransmit, RtpPacketSender::kHighPriority))
+        return false;
+    }
+  }
+#endif // RS_FEC
+
   return send_result;
 }
+
+#ifdef RS_FEC
+int32_t RTPSenderAudio::SetRsPara(uint8_t n) {
+	rs_encoder_->SetN(n);
+	return 0;
+}
+
+int32_t RTPSenderAudio::SetRsStatus(bool enable) {
+	rs_encoder_->SetFECStatus(enable);
+	return 0;
+}
+
+bool RTPSenderAudio::GetRsStatus() const {
+	return rs_encoder_->GetFECStatus();
+}
+#endif // RS_FEC
 
 // Audio level magnitude and voice activity flag are set for each RTP packet
 int32_t RTPSenderAudio::SetAudioLevel(uint8_t level_dbov) {

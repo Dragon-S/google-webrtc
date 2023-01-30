@@ -43,6 +43,7 @@ const char kCodecParamAssociatedCodecName[] = "acn";
 // are treated as having the empty string as key.
 const char kCodecParamNotInNameValueFormat[] = "";
 
+const char kRsFecOpusCodecName[] = "rsfecopus";
 const char kOpusCodecName[] = "opus";
 const char kIsacCodecName[] = "ISAC";
 const char kL16CodecName[] = "L16";

@@ -46,7 +46,8 @@ absl::optional<AudioDecoderOpus::Config> AudioDecoderOpus::SdpToConfig(
     }
     return 1;  // Default to mono.
   }();
-  if (absl::EqualsIgnoreCase(format.name, "opus") &&
+  if ((absl::EqualsIgnoreCase(format.name, "opus") ||
+       absl::EqualsIgnoreCase(format.name, "rsfecopus")) &&
       format.clockrate_hz == 48000 && format.num_channels == 2 &&
       num_channels) {
     Config config;
@@ -66,6 +67,10 @@ void AudioDecoderOpus::AppendSupportedDecoders(
   AudioCodecInfo opus_info{48000, 1, 64000, 6000, 510000};
   opus_info.allow_comfort_noise = false;
   opus_info.supports_network_adaption = true;
+  SdpAudioFormat newOpus_format(
+      {"rsfecopus", 48000, 2, {{"minptime", "10"}, {"useinbandfec", "1"}}});
+  specs->push_back({std::move(newOpus_format), opus_info});
+
   SdpAudioFormat opus_format(
       {"opus", 48000, 2, {{"minptime", "10"}, {"useinbandfec", "1"}}});
   specs->push_back({std::move(opus_format), opus_info});

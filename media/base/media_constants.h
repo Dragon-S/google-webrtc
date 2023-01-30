@@ -44,6 +44,7 @@ extern const char kCodecParamAssociatedPayloadType[];
 extern const char kCodecParamAssociatedCodecName[];
 extern const char kCodecParamNotInNameValueFormat[];
 
+extern const char kRsFecOpusCodecName[];
 extern const char kOpusCodecName[];
 extern const char kIsacCodecName[];
 extern const char kL16CodecName[];

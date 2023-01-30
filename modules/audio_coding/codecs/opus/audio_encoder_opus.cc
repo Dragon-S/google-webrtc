@@ -207,6 +207,13 @@ int GetMultipliedBitrate(int bitrate, const std::vector<float>& multipliers) {
 
 void AudioEncoderOpusImpl::AppendSupportedEncoders(
     std::vector<AudioCodecSpec>* specs) {
+  const SdpAudioFormat newFmt = {"rsfecopus",
+                              kRtpTimestampRateHz,
+                              2,
+                              {{"minptime", "10"}, {"useinbandfec", "0"}}};
+  const AudioCodecInfo newInfo = QueryAudioEncoder(*SdpToConfig(newFmt));
+  specs->push_back({newFmt, newInfo});
+
   const SdpAudioFormat fmt = {"opus",
                               kRtpTimestampRateHz,
                               2,
@@ -239,7 +246,8 @@ std::unique_ptr<AudioEncoder> AudioEncoderOpusImpl::MakeAudioEncoder(
 
 absl::optional<AudioEncoderOpusConfig> AudioEncoderOpusImpl::SdpToConfig(
     const SdpAudioFormat& format) {
-  if (!absl::EqualsIgnoreCase(format.name, "opus") ||
+  if (!(absl::EqualsIgnoreCase(format.name, "opus") ||
+        absl::EqualsIgnoreCase(format.name, "rsfecopus")) ||
       format.clockrate_hz != kRtpTimestampRateHz || format.num_channels != 2) {
     return absl::nullopt;
   }

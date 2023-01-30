@@ -244,6 +244,8 @@ rtc_library("rtp_rtcp") {
     "source/video_rtp_depacketizer_vp8.h",
     "source/video_rtp_depacketizer_vp9.cc",
     "source/video_rtp_depacketizer_vp9.h",
+    "source/rs_fec.cc",
+    "source/rs_fec.h",
   ]
 
   if (rtc_enable_bwe_test_logging) {

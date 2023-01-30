@@ -41,6 +41,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_config.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
+#include "modules/rtp_rtcp/source/rs_fec.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_minmax.h"
@@ -51,6 +52,7 @@
 #include "rtc_base/trace_event.h"
 #include "system_wrappers/include/metrics.h"
 #include "system_wrappers/include/ntp_time.h"
+#include "media/base/rtp_utils.h"
 
 namespace webrtc {
 namespace voe {
@@ -307,6 +309,12 @@ class ChannelReceive : public ChannelReceiveInterface,
   mutable Mutex rtcp_counter_mutex_;
   RtcpPacketTypeCounter rtcp_packet_type_counter_
       RTC_GUARDED_BY(rtcp_counter_mutex_);
+
+#ifdef RS_FEC
+  //Reed-Solomon
+  std::unique_ptr<RsFecDecoder> rs_decoder_;
+  // int plr_;
+#endif // RS_FEC
 };
 
 void ChannelReceive::OnReceivedPayloadData(
@@ -594,6 +602,12 @@ ChannelReceive::ChannelReceive(
 
   // Ensure that RTCP is enabled for the created channel.
   rtp_rtcp_->SetRTCPStatus(RtcpMode::kCompound);
+
+#ifdef RS_FEC
+  //Reed-Solomon
+  rs_decoder_.reset(new RsFecDecoder());
+  rs_decoder_->Init();
+#endif // RS_FEC
 }
 
 ChannelReceive::~ChannelReceive() {
@@ -665,16 +679,59 @@ void ChannelReceive::OnRtpPacket(const RtpPacketReceived& packet) {
   RTPHeader header;
   packet_copy.GetHeader(&header);
 
-  // Interpolates absolute capture timestamp RTP header extension.
-  header.extension.absolute_capture_time =
-      absolute_capture_time_interpolator_.OnReceivePacket(
-          AbsoluteCaptureTimeInterpolator::GetSource(header.ssrc,
-                                                     header.arrOfCSRCs),
-          header.timestamp,
-          rtc::saturated_cast<uint32_t>(packet_copy.payload_type_frequency()),
-          header.extension.absolute_capture_time);
+  if (packet.size() <= header.headerLength + header.paddingLength) {
+    RTC_LOG(LS_WARNING) << "remove a padding packet";
+    return;
+  }
 
-  ReceivePacket(packet_copy.data(), packet_copy.size(), header);
+#ifdef RS_FEC
+  if(header.payloadType == RS_FEC_PAYLOAD_TYPE)
+  {
+
+    RTPHeader header_tmp = header;
+    int hlen = header.headerLength+header.paddingLength;
+    size_t length = packet.size();
+    int buf_size = cricket::kMaxRtpPacketLen;
+    std::unique_ptr<uint8_t> decoded_buf (new uint8_t[buf_size]);
+    uint8_t pt;
+    int decoded_size;
+    memcpy(decoded_buf.get(),packet.data(),hlen);
+    header_tmp.payload_type_frequency = it->second;
+
+    decoded_size = rs_decoder_->Decode(packet.data()+hlen, length - hlen,
+          header.sequenceNumber , header.timestamp, decoded_buf.get()+hlen, buf_size-hlen, pt);
+
+
+    if(decoded_size>1)
+    {
+      header_tmp.payloadType = pt;
+
+      ReceivePacket(decoded_buf.get(), hlen+decoded_size, header_tmp);
+    }
+    while((decoded_size = rs_decoder_->GetRecoveryData(decoded_buf.get()+hlen, buf_size-hlen,
+        header_tmp.sequenceNumber , header_tmp.timestamp, header_tmp.payloadType))>0)
+    {
+
+      RTC_DLOG(LS_VERBOSE)<< "Channel rs_decoder_::GetRecoveryData():sn="<< header_tmp.sequenceNumber<< ",ts="
+              << header_tmp.timestamp<< ",pt="<<(int)header_tmp.payloadType << ",size="<<decoded_size;
+
+      ReceivePacket(decoded_buf.get(), hlen+decoded_size, header_tmp);
+    }
+  }
+  else
+#endif // RS_FEC
+  {
+    // Interpolates absolute capture timestamp RTP header extension.
+    header.extension.absolute_capture_time =
+        absolute_capture_time_interpolator_.OnReceivePacket(
+            AbsoluteCaptureTimeInterpolator::GetSource(header.ssrc,
+                                                      header.arrOfCSRCs),
+            header.timestamp,
+            rtc::saturated_cast<uint32_t>(packet_copy.payload_type_frequency()),
+            header.extension.absolute_capture_time);
+
+    ReceivePacket(packet_copy.data(), packet_copy.size(), header);
+  }
 }
 
 void ChannelReceive::ReceivePacket(const uint8_t* packet,

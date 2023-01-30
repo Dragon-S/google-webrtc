@@ -22,6 +22,7 @@
 #include "modules/rtp_rtcp/source/absolute_capture_time_sender.h"
 #include "modules/rtp_rtcp/source/dtmf_queue.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
+#include "modules/rtp_rtcp/source/rs_fec.h"
 #include "rtc_base/one_time_event.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -68,6 +69,14 @@ class RTPSenderAudio {
   // Send a DTMF tone using RFC 2833 (4733)
   int32_t SendTelephoneEvent(uint8_t key, uint16_t time_ms, uint8_t level);
 
+#ifdef RS_FEC
+  int32_t SetRsPara(uint8_t n);
+
+  int32_t SetRsStatus(bool enable);
+
+  bool GetRsStatus() const;
+#endif // RS_FEC
+
  protected:
   bool SendTelephoneEventPacket(
       bool ended,
@@ -82,6 +91,10 @@ class RTPSenderAudio {
   RTPSender* const rtp_sender_ = nullptr;
 
   Mutex send_audio_mutex_;
+
+#ifdef RS_FEC
+  RsFecEncoder* rs_encoder_;
+#endif // RS_FEC
 
   // DTMF.
   bool dtmf_event_is_on_ = false;

@@ -31,6 +31,7 @@
 #include "modules/audio_processing/rms_level.h"
 #include "modules/pacing/packet_router.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
+#include "modules/rtp_rtcp/source/rs_fec.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
@@ -150,7 +151,7 @@ class ChannelSend : public ChannelSendInterface,
       uint32_t ssrc,
       const RtcpPacketTypeCounter& packet_counter) override;
 
-  void OnUplinkPacketLossRate(float packet_loss_rate);
+  void OnUplinkPacketLossRate(float packet_loss_rate, uint32_t jitter, uint32_t downlink_plr);
 
  private:
   // From AudioPacketizationCallback in the ACM
@@ -304,6 +305,8 @@ class VoERtcpObserver : public RtcpBandwidthObserver {
 
     int fraction_lost_aggregate = 0;
     int total_number_of_packets = 0;
+    uint32_t max_jitter = 0;
+    uint32_t dl_plr = 0;
 
     // If receiving multiple report blocks, calculate the weighted average based
     // on the number of packets a report refers to.
@@ -324,6 +327,9 @@ class VoERtcpObserver : public RtcpBandwidthObserver {
 
       extended_max_sequence_number_[block_it->source_ssrc] =
           block_it->extended_highest_sequence_number;
+
+      max_jitter = (max_jitter > (block_it->jitter)) ? max_jitter : (block_it->jitter);
+      dl_plr = (dl_plr > (block_it->packets_lost & 0x7)) ? dl_plr : (block_it->packets_lost & 0x7);
     }
     int weighted_fraction_lost = 0;
     if (total_number_of_packets > 0) {
@@ -331,7 +337,7 @@ class VoERtcpObserver : public RtcpBandwidthObserver {
           (fraction_lost_aggregate + total_number_of_packets / 2) /
           total_number_of_packets;
     }
-    owner_->OnUplinkPacketLossRate(weighted_fraction_lost / 255.0f);
+    owner_->OnUplinkPacketLossRate(weighted_fraction_lost / 255.0f, max_jitter, dl_plr);
   }
 
  private:
@@ -619,9 +625,66 @@ int ChannelSend::GetTargetBitrate() const {
   return audio_coding_->GetTargetBitrate();
 }
 
-void ChannelSend::OnUplinkPacketLossRate(float packet_loss_rate) {
+void ChannelSend::OnUplinkPacketLossRate(float packet_loss_rate,
+                                         uint32_t jitter, uint32_t downlink_plr) {
   CallEncoder([&](AudioEncoder* encoder) {
     encoder->OnReceivedUplinkPacketLossFraction(packet_loss_rate);
+#ifdef RS_FEC
+    if (rtp_sender_audio_->GetRsStatus()) {
+      int n = 12;
+      float plr = packet_loss_rate;
+      float dl_plr = 0;
+      int audio_bitrate = 0;
+
+      switch (downlink_plr) {
+        case 1:
+          dl_plr = 0.1f;break;
+        case 2:
+          dl_plr = 0.15f;break;
+        case 3:
+          dl_plr = 0.45f;break;
+        case 4:
+          dl_plr = 0.6f;break;
+        case 5:
+          dl_plr = 0.7f;break;
+        default:
+          break;
+      }
+
+      float jitter_ms = 1000.0f * jitter / encoder->SampleRateHz();
+      float jitter_plr = plr;
+      if (jitter_ms > 50) {
+        jitter_plr = plr + 0.002f * (jitter_ms - 50.0f) * (1.0f - plr);
+      }
+      jitter_plr += dl_plr;
+
+      if (jitter_plr < 0.1f) {
+        n = 8 + jitter_plr * 40;
+        audio_bitrate = 20000;
+      } else if(jitter_plr < 0.18f) {
+        n = 12;
+        audio_bitrate = 18000;
+      } else if(jitter_plr < 0.5f) {
+        n = 24;
+        audio_bitrate = 16000;
+      } else if(jitter_plr < 0.65f) {
+        n = 27;
+        audio_bitrate = 14000;
+      } else if(plr >= 0.65f) {
+        n = 30;
+        audio_bitrate = 12000;
+      } else {
+        n = 30;
+      }
+      rtp_sender_audio_->SetRsPara(n);
+      encoder->OnReceivedTargetAudioBitrate(audio_bitrate);
+      // TODO(James): audio bitrate first in bitrate allocator
+      // bitrate_allocator_->n = n;
+      // bitrate_allocator_->AudioBitrate = audio_bitrate;
+      // RTC_LOG(LS_ERROR) << "packet loss rate: "<< packet_loss_rate<<" ,jitter_plr: "<< jitter_plr
+      //             << ",jitter_ms: "<< jitter_ms<<" ,n: "<< n;
+    }
+#endif // RS_FEC
   });
 }
 
