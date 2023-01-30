@@ -160,7 +160,7 @@ rtc_library("audio_processing") {
     "render_queue_item_verifier.h",
   ]
 
-  defines = []
+  defines = ["WEBRTC_RNNOISE=1"]
   deps = [
     ":aec_dump_interface",
     ":api",
@@ -207,6 +207,7 @@ rtc_library("audio_processing") {
     "agc:legacy_agc",
     "capture_levels_adjuster",
     "ns",
+    "rnnoise",
     "transient:transient_suppressor_api",
     "vad",
     "hs",

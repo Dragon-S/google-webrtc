@@ -37,7 +37,11 @@
 #include "modules/audio_processing/include/audio_frame_proxies.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
+#ifdef WEBRTC_RNNOISE
+#include "modules/audio_processing/rnnoise/rnn_noise_suppression.h"
+#else // WEBRTC_RNNOISE
 #include "modules/audio_processing/ns/noise_suppressor.h"
+#endif //WEBRTC_RNNOISE
 #include "modules/audio_processing/optionally_built_submodule_creators.h"
 #include "modules/audio_processing/hs/howling_suppression_impl.h"
 #include "modules/audio_processing/render_queue_item_verifier.h"
@@ -413,7 +417,11 @@ class AudioProcessingImpl : public AudioProcessing {
     std::unique_ptr<HighPassFilter> high_pass_filter;
     std::unique_ptr<EchoControl> echo_controller;
     std::unique_ptr<EchoControlMobileImpl> echo_control_mobile;
+#ifdef WEBRTC_RNNOISE
+    std::unique_ptr<RnnNoiseSuppressionImpl> rnn_noise_suppressor;
+#else // WEBRTC_RNNOISE
     std::unique_ptr<NoiseSuppressor> noise_suppressor;
+#endif // WEBRTC_RNNOISE
     std::unique_ptr<HowlingSuppressionImpl> howling_suppressor;
     std::unique_ptr<TransientSuppressor> transient_suppressor;
     std::unique_ptr<CaptureLevelsAdjuster> capture_levels_adjuster;

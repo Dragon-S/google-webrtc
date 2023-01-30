@@ -664,10 +664,12 @@ void AudioProcessingImpl::HandleCaptureOutputUsedSetting(
     submodules_.echo_controller->SetCaptureOutputUsage(
         capture_.capture_output_used);
   }
+#ifndef WEBRTC_RNNOISE
   if (submodules_.noise_suppressor) {
     submodules_.noise_suppressor->SetCaptureOutputUsage(
         capture_.capture_output_used);
   }
+#endif // WEBRTC_RNNOISE
 }
 
 void AudioProcessingImpl::SetRuntimeSetting(RuntimeSetting setting) {
@@ -1205,11 +1207,13 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
         submodules_.gain_control->AnalyzeCaptureAudio(*capture_buffer));
   }
 
+#ifndef WEBRTC_RNNOISE
   if ((!config_.noise_suppression.analyze_linear_aec_output_when_available ||
        !linear_aec_buffer || submodules_.echo_control_mobile) &&
       submodules_.noise_suppressor) {
     submodules_.noise_suppressor->Analyze(*capture_buffer);
   }
+#endif // WEBRTC_RNNOISE
 
   if (submodules_.echo_control_mobile) {
     // Ensure that the stream delay was set before the call to the
@@ -1218,9 +1222,17 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
       return AudioProcessing::kStreamParameterNotSetError;
     }
 
+#ifdef WEBRTC_RNNOISE
+    if (submodules_.rnn_noise_suppressor) {
+      //RTC_LOG(LS_ERROR) << "webrtc APM rnn noise suppressor runing";
+      submodules_.rnn_noise_suppressor->ProcessCaptureAudio(capture_buffer);
+    }
+#else // WEBRTC_RNNOISE
     if (submodules_.noise_suppressor) {
+      // RTC_LOG(LS_ERROR) << "webrtc APM winner noise suppressor runing";
       submodules_.noise_suppressor->Process(capture_buffer);
     }
+#endif // WEBRTC_RNNOISE
 
     RETURN_ON_ERR(submodules_.echo_control_mobile->ProcessCaptureAudio(
         capture_buffer, stream_delay_ms()));
@@ -1236,14 +1248,22 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
           capture_buffer, linear_aec_buffer, capture_.echo_path_gain_change);
     }
 
+#ifndef WEBRTC_RNNOISE
     if (config_.noise_suppression.analyze_linear_aec_output_when_available &&
         linear_aec_buffer && submodules_.noise_suppressor) {
       submodules_.noise_suppressor->Analyze(*linear_aec_buffer);
     }
 
     if (submodules_.noise_suppressor) {
+      // RTC_LOG(LS_ERROR) << "webrtc APM winner noise suppressor runing";
       submodules_.noise_suppressor->Process(capture_buffer);
     }
+#else // WEBRTC_RNNOISE
+    if (submodules_.rnn_noise_suppressor) {
+      //RTC_LOG(LS_ERROR) << "webrtc APM rnn noise suppressor runing";
+      submodules_.rnn_noise_suppressor->ProcessCaptureAudio(capture_buffer);
+    }
+#endif // WEBRTC_RNNOISE
   }
 
   if (submodules_.agc_manager) {
@@ -1748,7 +1768,12 @@ AudioProcessing::Config AudioProcessingImpl::GetConfig() const {
 bool AudioProcessingImpl::UpdateActiveSubmoduleStates() {
   return submodule_states_.Update(
       config_.high_pass_filter.enabled, !!submodules_.echo_control_mobile,
-      !!submodules_.noise_suppressor, !!submodules_.gain_control,
+#ifdef WEBRTC_RNNOISE
+      !!submodules_.rnn_noise_suppressor,
+#else // WEBRTC_RNNOISE
+      !!submodules_.noise_suppressor,
+#endif // WEBRTC_RNNOISE
+      !!submodules_.gain_control,
       !!submodules_.gain_controller2, !!submodules_.voice_activity_detector,
       config_.pre_amplifier.enabled || config_.capture_level_adjustment.enabled,
       capture_nonlocked_.echo_controller_enabled,
@@ -1986,6 +2011,14 @@ void AudioProcessingImpl::InitializeVoiceActivityDetector(
 }
 
 void AudioProcessingImpl::InitializeNoiseSuppressor() {
+#ifdef WEBRTC_RNNOISE
+  submodules_.rnn_noise_suppressor.reset();
+
+  if (config_.noise_suppression.enabled) {
+    submodules_.rnn_noise_suppressor = std::make_unique<RnnNoiseSuppressionImpl>();
+    submodules_.rnn_noise_suppressor->Initialize(num_proc_channels(), 16000);
+  }
+#else // WEBRTC_RNNOISE
   submodules_.noise_suppressor.reset();
 
   if (config_.noise_suppression.enabled) {
@@ -2011,6 +2044,7 @@ void AudioProcessingImpl::InitializeNoiseSuppressor() {
     submodules_.noise_suppressor = std::make_unique<NoiseSuppressor>(
         cfg, proc_sample_rate_hz(), num_proc_channels());
   }
+#endif // WEBRTC_RNNOISE
 }
 
 void AudioProcessingImpl::InitializeCaptureLevelsAdjuster() {

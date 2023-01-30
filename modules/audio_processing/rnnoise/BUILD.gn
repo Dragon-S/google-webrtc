@@ -1,0 +1,60 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+rtc_static_library("rnnoise") {
+  visibility = [ "*" ]
+  configs += [ "..:apm_debug_dump" ]
+  sources = [
+      "_kiss_fft_guts.h",
+      "tansig_table.h",
+      "opus_types.h",
+      "common.h",
+      "arch.h",
+      "celt_lpc.h",
+      "celt_lpc.c",
+      "kiss_fft.h",
+      "kiss_fft.c",
+      "pitch.h",
+      "pitch.c",
+      "rnn_data.h",
+      "rnn_data.c",
+      "rnn.h",
+      "rnn.c",
+      "rnnoise.h",
+      "denoise.c",
+      "rnn_noise_suppression.h",
+      "rnn_noise_suppression.cc",
+  ]
+
+  defines = []
+
+  if (rtc_build_with_neon && current_cpu != "arm64") {
+    suppressed_configs += [ "//build/config/compiler:compiler_arm_fpu" ]
+    cflags = [ "-mfpu=neon" ]
+  }
+
+  deps = [
+    "..:apm_logging",
+    "..:audio_buffer",
+    "..:high_pass_filter",
+    "../../../api:array_view",
+    "../../../common_audio:common_audio_c",
+    "../../../common_audio/third_party/ooura:fft_size_128",
+    "../../../common_audio/third_party/ooura:fft_size_256",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:safe_minmax",
+    "../../../rtc_base/system:arch",
+    "../../../system_wrappers",
+    "../../../system_wrappers:field_trial",
+    "../../../system_wrappers:metrics",
+    "../utility:cascaded_biquad_filter",
+  ]
+  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+}
