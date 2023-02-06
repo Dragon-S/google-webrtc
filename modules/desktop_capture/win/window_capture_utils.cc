@@ -72,6 +72,12 @@ BOOL CALLBACK GetWindowListHandler(HWND hwnd, LPARAM param) {
     return TRUE;
   }
 
+  //FIXME:目前还没弄清楚为什么加了这个就可以获取到当前进程的窗口了
+  // Skip untitled window if ignoreUntitled specified
+  if (params->ignore_untitled && GetWindowTextLength(hwnd) == 0) {
+    return TRUE;
+  }
+
   if (params->ignore_unresponsive && !IsWindowResponding(hwnd)) {
     return TRUE;
   }
@@ -89,10 +95,12 @@ BOOL CALLBACK GetWindowListHandler(HWND hwnd, LPARAM param) {
   // windows owned by the current process. Consumers should either ensure that
   // the thread running their message loop never waits on this operation, or use
   // the option to exclude these windows from the source list.
-  bool owned_by_current_process = IsWindowOwnedByCurrentProcess(hwnd);
-  if (owned_by_current_process && params->ignore_current_process_windows) {
-    return TRUE;
-  }
+  // 因会议本地录制功能需要录制会议窗口因此需要去掉此判断条件
+  bool owned_by_current_process = true;
+  // bool owned_by_current_process = IsWindowOwnedByCurrentProcess(hwnd);
+  // if (owned_by_current_process && params->ignore_current_process_windows) {
+  //   return TRUE;
+  // }
 
   // Even if consumers request to enumerate windows owned by the current
   // process, we should not call GetWindowText* on unresponsive windows owned by
