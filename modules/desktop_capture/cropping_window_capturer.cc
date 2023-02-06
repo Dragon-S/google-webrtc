@@ -109,7 +109,7 @@ void CroppingWindowCapturer::OnCaptureResult(
   }
 
   DesktopRect original_window_rect = GetOriginalWindowRect();
-  screen_frame->set_original_window_rect(original_window_rect);
+  cropped_frame->set_original_window_rect(original_window_rect);
 
   callback_->OnCaptureResult(Result::SUCCESS, std::move(cropped_frame));
 }
