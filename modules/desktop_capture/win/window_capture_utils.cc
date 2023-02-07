@@ -43,11 +43,12 @@ struct GetWindowListParams {
   DesktopCapturer::SourceList* const result;
 };
 
-bool IsWindowOwnedByCurrentProcess(HWND hwnd) {
-  DWORD process_id;
-  GetWindowThreadProcessId(hwnd, &process_id);
-  return process_id == GetCurrentProcessId();
-}
+// TODO:解决未使用函数警告，需要使用时再打开
+// bool IsWindowOwnedByCurrentProcess(HWND hwnd) {
+//   DWORD process_id;
+//   GetWindowThreadProcessId(hwnd, &process_id);
+//   return process_id == GetCurrentProcessId();
+// }
 
 BOOL CALLBACK GetWindowListHandler(HWND hwnd, LPARAM param) {
   GetWindowListParams* params = reinterpret_cast<GetWindowListParams*>(param);
