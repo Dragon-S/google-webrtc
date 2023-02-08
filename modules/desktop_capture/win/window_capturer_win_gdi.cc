@@ -95,6 +95,31 @@ BOOL CALLBACK OwnedWindowCollector(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
+// Check if the window is a translucent layered window.
+BOOL isTranslucentWindow(HWND hwnd) {
+  const LONG window_ex_style = GetWindowLong(hwnd, GWL_EXSTYLE);
+  if (window_ex_style & WS_EX_LAYERED) {
+    COLORREF color_ref_key = 0;
+    BYTE alpha = 0;
+    DWORD flags = 0;
+
+    // GetLayeredWindowAttributes fails if the window was setup with
+    // UpdateLayeredWindow. We have no way to know the opacity of the window in
+    // that case. This happens for Stiky Note (crbug/412726).
+    if (!GetLayeredWindowAttributes(hwnd, &color_ref_key, &alpha, &flags))
+      return TRUE;
+
+    // UpdateLayeredWindow is the only way to set per-pixel alpha and will cause
+    // the previous GetLayeredWindowAttributes to fail. So we only need to check
+    // the window wide color key or alpha.
+    if ((flags & LWA_COLORKEY) || ((flags & LWA_ALPHA) && (alpha < 255))) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 WindowCapturerWinGdi::WindowCapturerWinGdi(
     bool enumerate_current_process_windows)
     : enumerate_current_process_windows_(enumerate_current_process_windows) {}
@@ -368,8 +393,10 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
         for (auto it = owned_windows_.rbegin(); it != owned_windows_.rend();
              it++) {
           HWND hwnd = *it;
+          // FIXME:带透明度的窗口合成会出现黑屏，暂时先过滤掉透明窗口，下一步需要解决
+          // 抓取透明窗口合成图片黑屏问题。（此问题对应的chrome也存在M108、M109、M110）
           if (owned_window_capturer_->SelectSource(
-                  reinterpret_cast<SourceId>(hwnd))) {
+                  reinterpret_cast<SourceId>(hwnd)) && !isTranslucentWindow(hwnd)) {
             CaptureResults results = owned_window_capturer_->CaptureFrame(
                 /*capture_owned_windows*/ false);
 
