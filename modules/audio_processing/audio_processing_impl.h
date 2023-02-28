@@ -52,6 +52,9 @@
 #include "rtc_base/swap_queue.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
+#ifdef WEBRTC_CUSTOM_CONFIG
+#include "modules/third_party/custom_webrtc_config/custom_webrtc_config.h"
+#endif // WEBRTC_CUSTOM_CONFIG
 
 namespace webrtc {
 
@@ -564,6 +567,10 @@ class AudioProcessingImpl : public AudioProcessing {
       agc_render_signal_queue_;
   std::unique_ptr<SwapQueue<std::vector<float>, RenderQueueItemVerifier<float>>>
       red_render_signal_queue_;
+#ifdef WEBRTC_CUSTOM_CONFIG
+  // webrtc custom config
+  std::unique_ptr<CustomWebrtcConfig> webrtc_custom_config_;
+#endif
 };
 
 }  // namespace webrtc

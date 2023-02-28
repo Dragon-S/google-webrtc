@@ -312,6 +312,10 @@ AudioProcessingImpl::AudioProcessingImpl(
   capture_nonlocked_.echo_controller_enabled =
       static_cast<bool>(echo_control_factory_);
 
+#ifdef WEBRTC_CUSTOM_CONFIG
+  webrtc_custom_config_ = std::make_unique<CustomWebrtcConfig>();
+#endif
+
   Initialize();
 }
 
@@ -1286,6 +1290,12 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
     RETURN_ON_ERR(submodules_.howling_suppressor->ProcessCaptureAudio(
     capture_buffer));
   }
+
+#ifdef WEBRTC_CUSTOM_CONFIG
+  if (webrtc_custom_config_->GetPersonalNsState()) {
+    RTC_LOG(LS_ERROR) << "sll-------CustomWebrtcConfig--sucess";
+  }
+#endif
 
   if (submodule_states_.CaptureMultiBandProcessingPresent() &&
       SampleRateSupportsMultiBand(

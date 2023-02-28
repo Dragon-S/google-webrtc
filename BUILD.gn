@@ -294,6 +294,14 @@ config("common_config") {
     defines += [ "WEBRTC_USE_H264" ]
   }
 
+  if (webrtc_custom_config) {
+    defines += [ "WEBRTC_CUSTOM_CONFIG" ]
+  }
+
+  if (webrtc_personal_ns) {
+    defines += [ "WEBRTC_PERSONAL_NS" ]
+  }
+
   if (rtc_use_absl_mutex) {
     defines += [ "WEBRTC_ABSL_MUTEX" ]
   }

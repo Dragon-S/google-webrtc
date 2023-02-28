@@ -1,0 +1,29 @@
+import("../../../webrtc.gni")
+
+config("remove_warning") {
+  if (is_clang) {
+    cflags = [
+      "-Wno-exit-time-destructors",
+      "-Wno-global-constructors",
+    ]
+  }
+}
+
+rtc_library("custom_webrtc_config") {
+  visibility = [ "*" ]
+
+  configs += [
+    ":remove_warning",
+   ]
+
+  sources = [
+    "custom_webrtc_config.cc",
+    "custom_webrtc_config.h",
+  ]
+
+  deps = [
+    "../../../rtc_base:checks",
+    "../../../rtc_base:platform_thread_types",
+    "../helper",
+  ]
+}

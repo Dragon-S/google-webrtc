@@ -229,6 +229,10 @@ rtc_library("audio_processing") {
   } else {
     deps += [ "aec_dump:null_aec_dump_factory" ]
   }
+
+  if (webrtc_custom_config) {
+    deps += [ "../third_party/custom_webrtc_config", ]
+  }
 }
 
 rtc_library("residual_echo_detector") {

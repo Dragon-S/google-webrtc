@@ -1,0 +1,26 @@
+import("../../../webrtc.gni")
+
+rtc_library("helper") {
+  visibility = [ "*" ]
+
+  sources = [
+    "helper.cc",
+    "helper.h",
+  ]
+
+  if (is_mac) {
+    sources += [
+      "helper_mac.h",
+      "helper_mac.mm",
+    ]
+
+    frameworks = [
+      "Foundation.framework",
+    ]
+  } else if (is_win) {
+    sources += [
+      "helper_win.h",
+      "helper_win.cc",
+    ]
+  }
+}
