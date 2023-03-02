@@ -220,6 +220,7 @@ void AecDumpImpl::WriteRuntimeSetting(
       dst->set_max_volume(src.max_volume);
       break;
     }
+    case AudioProcessing::RuntimeSetting::Type::kPersonalNsChange:
     case AudioProcessing::RuntimeSetting::Type::kNotSpecified:
       RTC_DCHECK_NOTREACHED();
       break;

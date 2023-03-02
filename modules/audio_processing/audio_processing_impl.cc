@@ -168,7 +168,8 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
     bool gain_adjustment_enabled,
     bool echo_controller_enabled,
     bool transient_suppressor_enabled,
-    bool howling_suppressor_enabled) {
+    bool howling_suppressor_enabled,
+    bool personal_ns_enabled) {
   bool changed = false;
   changed |= (high_pass_filter_enabled != high_pass_filter_enabled_);
   changed |=
@@ -183,6 +184,7 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
   changed |= (echo_controller_enabled != echo_controller_enabled_);
   changed |= (transient_suppressor_enabled != transient_suppressor_enabled_);
   changed |= (howling_suppressor_enabled != howling_suppressor_enabled_);
+  changed |= (personal_ns_enabled != personal_ns_enabled_);
   if (changed) {
     high_pass_filter_enabled_ = high_pass_filter_enabled;
     mobile_echo_controller_enabled_ = mobile_echo_controller_enabled;
@@ -194,6 +196,7 @@ bool AudioProcessingImpl::SubmoduleStates::Update(
     echo_controller_enabled_ = echo_controller_enabled;
     transient_suppressor_enabled_ = transient_suppressor_enabled;
     howling_suppressor_enabled_ = howling_suppressor_enabled;
+    personal_ns_enabled_ = personal_ns_enabled;
   }
 
   changed |= first_update_;
@@ -216,7 +219,9 @@ bool AudioProcessingImpl::SubmoduleStates::CaptureMultiBandProcessingActive(
     bool ec_processing_active) const {
   return high_pass_filter_enabled_ || mobile_echo_controller_enabled_ ||
          noise_suppressor_enabled_ || adaptive_gain_controller_enabled_ ||
-         howling_suppressor_enabled_ || (echo_controller_enabled_ && ec_processing_active);
+         howling_suppressor_enabled_ ||
+         (echo_controller_enabled_ && ec_processing_active) ||
+         personal_ns_enabled_;
 }
 
 bool AudioProcessingImpl::SubmoduleStates::CaptureFullBandProcessingActive()
@@ -410,6 +415,9 @@ void AudioProcessingImpl::InitializeLocked() {
   InitializeVoiceActivityDetector(/*config_has_changed=*/true);
   InitializeNoiseSuppressor();
   InitializeHowlingSuppressor();
+#ifdef WEBRTC_PERSONAL_NS
+  InitializePersonalNs();
+#endif // WEBRTC_PERSONAL_NS
   InitializeAnalyzer();
   InitializePostProcessor();
   InitializePreProcessor();
@@ -547,6 +555,13 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
   const bool hs_config_changed =
       config_.howling_suppression.enabled != config.howling_suppression.enabled;
 
+  const bool personal_ns_changed =
+      (config_.personal_ns.enabled != config.personal_ns.enabled)
+#ifdef WEBRTC_CUSTOM_CONFIG
+      || (config_.personal_ns.enabled != webrtc_custom_config_->GetPersonalNsState())
+#endif
+      ;
+
   const bool ts_config_changed = config_.transient_suppression.enabled !=
                                  config.transient_suppression.enabled;
 
@@ -594,6 +609,12 @@ void AudioProcessingImpl::ApplyConfig(const AudioProcessing::Config& config) {
 
   if (hs_config_changed) {
     InitializeHowlingSuppressor();
+  }
+
+  if (personal_ns_changed) {
+#ifdef WEBRTC_PERSONAL_NS
+    InitializePersonalNs();
+#endif // WEBRTC_PERSONAL_NS
   }
 
   // Reinitialization must happen after all submodule configuration to avoid
@@ -702,6 +723,9 @@ bool AudioProcessingImpl::PostRuntimeSetting(RuntimeSetting setting) {
     }
     case RuntimeSetting::Type::kNotSpecified:
       RTC_DCHECK_NOTREACHED();
+      return true;
+    case RuntimeSetting::Type::kPersonalNsChange:
+      capture_runtime_settings_enqueuer_.Enqueue(setting);
       return true;
   }
   // The language allows the enum to have a non-enumerator
@@ -891,6 +915,14 @@ void AudioProcessingImpl::HandleCaptureRuntimeSettings() {
         setting.GetBool(&value);
         HandleCaptureOutputUsedSetting(value);
         break;
+      case RuntimeSetting::Type::kPersonalNsChange: {
+        bool value;
+        setting.GetBool(&value);
+#ifdef WEBRTC_PERSONAL_NS
+        submodules_.personal_nsor->Enable(value);
+#endif
+        break;
+      }
     }
     ++num_settings_processed;
   }
@@ -928,6 +960,7 @@ void AudioProcessingImpl::HandleRenderRuntimeSettings() {
       case RuntimeSetting::Type::kCaptureFixedPostGain:    // fall-through
       case RuntimeSetting::Type::kCaptureOutputUsed:       // fall-through
       case RuntimeSetting::Type::kNotSpecified:
+      case RuntimeSetting::Type::kPersonalNsChange:
         RTC_DCHECK_NOTREACHED();
         break;
     }
@@ -1291,11 +1324,16 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
     capture_buffer));
   }
 
+#ifdef WEBRTC_PERSONAL_NS
+  if (submodules_.personal_nsor
 #ifdef WEBRTC_CUSTOM_CONFIG
-  if (webrtc_custom_config_->GetPersonalNsState()) {
-    RTC_LOG(LS_ERROR) << "sll-------CustomWebrtcConfig--sucess";
+      && webrtc_custom_config_->GetPersonalNsState()
+#endif // WEBRTC_CUSTOM_CONFIG
+  ) {
+    RETURN_ON_ERR(submodules_.personal_nsor->ProcessCaptureAudio(
+        capture_buffer));
   }
-#endif
+#endif // WEBRTC_PERSONAL_NS
 
   if (submodule_states_.CaptureMultiBandProcessingPresent() &&
       SampleRateSupportsMultiBand(
@@ -1788,7 +1826,13 @@ bool AudioProcessingImpl::UpdateActiveSubmoduleStates() {
       config_.pre_amplifier.enabled || config_.capture_level_adjustment.enabled,
       capture_nonlocked_.echo_controller_enabled,
       !!submodules_.transient_suppressor,
-      !!submodules_.howling_suppressor);
+      !!submodules_.howling_suppressor
+#ifdef WEBRTC_PERSONAL_NS
+      , !!submodules_.personal_nsor
+#else
+      , false
+#endif // WEBRTC_PERSONAL_NS
+      );
 }
 
 void AudioProcessingImpl::InitializeTransientSuppressor() {
@@ -2092,6 +2136,21 @@ void AudioProcessingImpl::InitializeHowlingSuppressor() {
   submodules_.howling_suppressor->Initialize(num_proc_channels(), proc_sample_rate_hz());
   // }
 }
+
+#ifdef WEBRTC_PERSONAL_NS
+void AudioProcessingImpl::InitializePersonalNs() {
+//   bool enable = config_.personal_ns.enabled;
+// #ifdef WEBRTC_CUSTOM_CONFIG
+//   enable = enable || webrtc_custom_config_->GetPersonalNsState();
+// #endif
+  submodules_.personal_nsor.reset();
+//   if (enable) {
+    submodules_.personal_nsor = std::make_unique<PersonalNsImpl>();
+    submodules_.personal_nsor->Enable(true);
+    submodules_.personal_nsor->Initialize(num_proc_channels(), proc_sample_rate_hz());
+  // }
+}
+#endif // WEBRTC_PERSONAL_NS
 
 void AudioProcessingImpl::InitializeResidualEchoDetector() {
   if (submodules_.echo_detector) {

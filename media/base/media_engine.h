@@ -94,6 +94,8 @@ class VoiceEngineInterface : public RtpHeaderExtensionQueryInterface {
 
   // Stops recording AEC dump.
   virtual void StopAecDump() = 0;
+
+  virtual bool SetPersonalNs(const bool enable) = 0;
 };
 
 class VideoEngineInterface : public RtpHeaderExtensionQueryInterface {

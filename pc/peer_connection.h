@@ -443,6 +443,9 @@ class PeerConnection : public PeerConnectionInternal,
   }
   void RequestUsagePatternReportForTesting();
 
+  // audio processing runtime setting
+  void SetPersonalNs(const bool enable);
+
  protected:
   // Available for rtc::scoped_refptr creation
   PeerConnection(rtc::scoped_refptr<ConnectionContext> context,

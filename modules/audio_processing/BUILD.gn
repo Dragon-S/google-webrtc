@@ -233,6 +233,10 @@ rtc_library("audio_processing") {
   if (webrtc_custom_config) {
     deps += [ "../third_party/custom_webrtc_config", ]
   }
+
+  if (webrtc_personal_ns) {
+    deps += [ "pns" ]
+  }
 }
 
 rtc_library("residual_echo_detector") {

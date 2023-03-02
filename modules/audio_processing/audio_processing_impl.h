@@ -41,9 +41,12 @@
 #include "modules/audio_processing/rnnoise/rnn_noise_suppression.h"
 #else // WEBRTC_RNNOISE
 #include "modules/audio_processing/ns/noise_suppressor.h"
-#endif //WEBRTC_RNNOISE
+#endif // WEBRTC_RNNOISE
 #include "modules/audio_processing/optionally_built_submodule_creators.h"
 #include "modules/audio_processing/hs/howling_suppression_impl.h"
+#ifdef WEBRTC_PERSONAL_NS
+#include "modules/audio_processing/pns/personal_ns_impl.h"
+#endif // WEBRTC_PERSONAL_NS
 #include "modules/audio_processing/render_queue_item_verifier.h"
 #include "modules/audio_processing/rms_level.h"
 #include "modules/audio_processing/transient/transient_suppressor.h"
@@ -224,7 +227,8 @@ class AudioProcessingImpl : public AudioProcessing {
                 bool gain_adjustment_enabled,
                 bool echo_controller_enabled,
                 bool transient_suppressor_enabled,
-                bool howling_suppresor_enabled);
+                bool howling_suppresor_enabled,
+                bool personal_ns_enabeld);
     bool CaptureMultiBandSubModulesActive() const;
     bool CaptureMultiBandProcessingPresent() const;
     bool CaptureMultiBandProcessingActive(bool ec_processing_active) const;
@@ -249,6 +253,7 @@ class AudioProcessingImpl : public AudioProcessing {
     bool echo_controller_enabled_ = false;
     bool transient_suppressor_enabled_ = false;
     bool howling_suppressor_enabled_ = false;
+    bool personal_ns_enabled_ = false;
     bool first_update_ = true;
   };
 
@@ -297,6 +302,9 @@ class AudioProcessingImpl : public AudioProcessing {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeNoiseSuppressor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializeHowlingSuppressor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
+#ifdef WEBRTC_PERSONAL_NS
+  void InitializePersonalNs() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
+#endif
   void InitializeCaptureLevelsAdjuster()
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
   void InitializePostProcessor() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_capture_);
@@ -426,6 +434,9 @@ class AudioProcessingImpl : public AudioProcessing {
     std::unique_ptr<NoiseSuppressor> noise_suppressor;
 #endif // WEBRTC_RNNOISE
     std::unique_ptr<HowlingSuppressionImpl> howling_suppressor;
+#ifdef WEBRTC_PERSONAL_NS
+    std::unique_ptr<PersonalNsImpl> personal_nsor;
+#endif
     std::unique_ptr<TransientSuppressor> transient_suppressor;
     std::unique_ptr<CaptureLevelsAdjuster> capture_levels_adjuster;
   } submodules_;

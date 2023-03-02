@@ -1,0 +1,61 @@
+# Copyright (c) 2019 The WebRTC project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+import("../../../webrtc.gni")
+
+config("remove_warning") {
+  if (is_clang) {
+    cflags = [
+      "-Wno-global-constructors",
+    ]
+  }
+}
+
+rtc_static_library("pns") {
+  visibility = [ "*" ]
+
+  configs += [
+    ":remove_warning",
+  ]
+
+  sources = [
+      "embedder.h",
+      "embedder.cc",
+      "mel_feature.h",
+      "mel_feature.cc",
+      "pns_fft.h",
+      "pns_fft.cc",
+      "voice_filter.h",
+      "voice_filter.cc",
+      "personal_ns.h",
+      "personal_ns.cc",
+      "personal_ns_impl.h",
+      "personal_ns_impl.cc",
+  ]
+
+  defines = ["ORT_NO_EXCEPTIONS"]
+
+  if (rtc_build_with_neon && current_cpu != "arm64") {
+    suppressed_configs += [ "//build/config/compiler:compiler_arm_fpu" ]
+    cflags = [ "-mfpu=neon" ]
+  }
+
+  if (is_mac) {
+    include_dirs = ["onnxruntime/include"]
+    if (target_cpu == "arm64") {
+      lib_dirs = ["onnxruntime/lib/osx-arm64"]
+    } else if (target_cpu == "x64") {
+      lib_dirs = ["onnxruntime/lib/osx-x86_64"]
+    }
+    libs = ["onnxruntime"]
+  }
+
+  if (webrtc_custom_config) {
+    deps = [ "../../third_party/custom_webrtc_config" ]
+  }
+}

@@ -409,6 +409,21 @@ rtc::scoped_refptr<webrtc::AudioState> WebRtcVoiceEngine::GetAudioState()
   return audio_state_;
 }
 
+bool WebRtcVoiceEngine::SetPersonalNs(const bool enable) {
+  RTC_DCHECK(worker_thread_checker_.IsCurrent());
+  webrtc::AudioProcessing::RuntimeSetting pnsSetting = 
+    webrtc::AudioProcessing::RuntimeSetting::CreatePersonalNsSetting(enable);
+
+  webrtc::AudioProcessing* ap = apm();
+  if (!ap) {
+    RTC_LOG(LS_ERROR)
+      << "No audio processing module present for enable pns";
+    return false;
+  }
+  ap->SetRuntimeSetting(pnsSetting);
+  return true;
+}
+
 VoiceMediaChannel* WebRtcVoiceEngine::CreateMediaChannel(
     webrtc::Call* call,
     const MediaConfig& config,

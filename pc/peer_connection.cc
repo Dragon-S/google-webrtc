@@ -2945,6 +2945,17 @@ void PeerConnection::RequestUsagePatternReportForTesting() {
       /* delay_ms= */ 0);
 }
 
+void PeerConnection::SetPersonalNs(const bool enable) {
+  if (!worker_thread()->IsCurrent()) {
+    worker_thread()->BlockingCall([this, enable] {
+      SetPersonalNs(enable);
+    });
+    return ;
+  }
+
+  context_->media_engine()->voice().SetPersonalNs(enable);
+}
+
 std::function<void(const rtc::CopyOnWriteBuffer& packet,
                    int64_t packet_time_us)>
 PeerConnection::InitializeRtcpCallback() {

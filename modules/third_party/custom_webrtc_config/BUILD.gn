@@ -14,7 +14,7 @@ rtc_library("custom_webrtc_config") {
 
   configs += [
     ":remove_warning",
-   ]
+  ]
 
   sources = [
     "custom_webrtc_config.cc",

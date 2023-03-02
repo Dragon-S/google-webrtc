@@ -231,6 +231,11 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       bool enabled = false;
     } howling_suppression;
 
+    // Enables personal ns
+    struct PersonalNs {
+      bool enabled = false;
+    } personal_ns;
+
     // Enables transient suppression.
     struct TransientSuppression {
       bool enabled = false;
@@ -393,7 +398,8 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
       kCustomRenderProcessingRuntimeSetting,
       kPlayoutAudioDeviceChange,
       kCapturePostGain,
-      kCaptureOutputUsed
+      kCaptureOutputUsed,
+      kPersonalNsChange
     };
 
     // Play-out audio device properties.
@@ -449,6 +455,10 @@ class RTC_EXPORT AudioProcessing : public rtc::RefCountInterface {
     static RuntimeSetting CreateCaptureOutputUsedSetting(
         bool capture_output_used) {
       return {Type::kCaptureOutputUsed, capture_output_used};
+    }
+
+    static RuntimeSetting CreatePersonalNsSetting(bool enable) {
+      return {Type::kCaptureOutputUsed, enable};
     }
 
     Type type() const { return type_; }
