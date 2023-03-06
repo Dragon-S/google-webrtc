@@ -1,4 +1,5 @@
 #include "helper_win.h"
+#include "rtc_base/logging.h"
 
 #include <shlobj.h>
 
@@ -11,7 +12,7 @@ std::wstring getXuanXingMeetPath() {
     std::wstring resultPath;
     if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appDataPath) == S_OK) {
         CoTaskMemFree(appDataPath);
-        resultPath = std::wstring(appDataPath) + L"\\XuanXingMeet";
+        resultPath = std::wstring(appDataPath) + L"\\XuanXingMeet\\";
     } else {
         CoTaskMemFree(appDataPath);
         RTC_LOG(LS_ERROR) << "Failed to get appdata path";
@@ -20,8 +21,8 @@ std::wstring getXuanXingMeetPath() {
     return resultPath;
 }
 
-std::string GetXuanXingMeetDirWin(const std::wstring fileName) {
-    std::wstring wsPath = getXuanXingMeetPath() + L"\\" + fileName;
+std::string GetXuanXingMeetDirWin() {
+    std::wstring wsPath = getXuanXingMeetPath();
     if (wsPath == L"") {
         RTC_LOG(LS_ERROR) << "path is null";
         return "";

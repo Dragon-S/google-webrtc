@@ -52,7 +52,7 @@ std::time_t GetLastModificationTime(const std::string file_path) {
 
 CustomWebrtcConfig::CustomWebrtcConfig() {
   std::string xxm_dir = helper::GetXuanXingMeetDir();
-  config_file_path_ = xxm_dir + "/webrtc_config.txt";
+  config_file_path_ = xxm_dir + "webrtc_config.txt";
 
   //初始化文件最后修改时间
   last_modify_time_ = GetLastModificationTime(config_file_path_);
