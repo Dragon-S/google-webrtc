@@ -8,7 +8,7 @@ std::string GetXuanXingMeetDirMac() {
                                                          NSUserDomainMask, YES);
 	NSString *applicationSupportDirectory = [paths firstObject];
 	std::string applicationSupportPath = std::string([applicationSupportDirectory UTF8String]);
-	return applicationSupportPath + "/XuanXingMeet";
+	return applicationSupportPath + "/XuanXingMeet/";
 }
 
 } // namespace helper
