@@ -147,6 +147,11 @@ class RTC_EXPORT DesktopFrame {
     original_window_rect_ = new_rect;
   }
 
+  bool shared_window_minimized() const { return shared_window_minimized_; }
+  void set_shared_window_minimized(bool shared_window_minimized) {
+    shared_window_minimized_ = shared_window_minimized;
+  }
+
  protected:
   DesktopFrame(DesktopSize size,
                int stride,
@@ -171,6 +176,7 @@ class RTC_EXPORT DesktopFrame {
   uint32_t capturer_id_;
   std::vector<uint8_t> icc_profile_;
   DesktopRect original_window_rect_;
+  bool shared_window_minimized_;
 };
 
 // A DesktopFrame that stores data in the heap.

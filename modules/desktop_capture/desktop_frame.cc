@@ -133,6 +133,7 @@ void DesktopFrame::CopyFrameInfoFrom(const DesktopFrame& other) {
   *mutable_updated_region() = other.updated_region();
   set_top_left(other.top_left());
   set_original_window_rect(other.original_window_rect());
+  set_shared_window_minimized(other.shared_window_minimized());
   set_icc_profile(other.icc_profile());
 }
 
@@ -144,6 +145,7 @@ void DesktopFrame::MoveFrameInfoFrom(DesktopFrame* other) {
   set_top_left(other->top_left());
   set_icc_profile(other->icc_profile());
   set_original_window_rect(other->original_window_rect());
+  set_shared_window_minimized(other->shared_window_minimized());
 }
 
 BasicDesktopFrame::BasicDesktopFrame(DesktopSize size)

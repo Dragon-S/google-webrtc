@@ -246,6 +246,10 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
 
     previous_size_ = frame->size();
     window_size_map_[window_] = previous_size_;
+
+    bool minimized = IsIconic(window_);
+    frame->set_shared_window_minimized(minimized);
+
     return {Result::SUCCESS, std::move(frame)};
   }
 
@@ -421,6 +425,9 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
   }
 
   cropped_frame->set_original_window_rect(original_widnow_rect);
+
+  bool minimized = IsIconic(window_);
+  frame->set_shared_window_minimized(minimized);
 
   return {Result::SUCCESS, std::move(cropped_frame)};
 }

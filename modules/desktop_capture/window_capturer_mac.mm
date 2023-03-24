@@ -199,6 +199,9 @@ void WindowCapturerMac::CaptureFrame() {
   float scale_factor = GetWindowScaleFactor(window_id_, frame->size());
   frame->set_dpi(DesktopVector(kStandardDPI * scale_factor, kStandardDPI * scale_factor));
 
+  bool is_window_on_screen = IsWindowOnScreen(on_screen_window);
+  frame->set_shared_window_minimized(!is_window_on_screen);
+
   callback_->OnCaptureResult(Result::SUCCESS, std::move(frame));
 }
 
