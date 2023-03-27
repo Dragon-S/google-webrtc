@@ -427,7 +427,7 @@ WindowCapturerWinGdi::CaptureResults WindowCapturerWinGdi::CaptureFrame(
   cropped_frame->set_original_window_rect(original_widnow_rect);
 
   bool minimized = IsIconic(window_);
-  frame->set_shared_window_minimized(minimized);
+  cropped_frame->set_shared_window_minimized(minimized);
 
   return {Result::SUCCESS, std::move(cropped_frame)};
 }
