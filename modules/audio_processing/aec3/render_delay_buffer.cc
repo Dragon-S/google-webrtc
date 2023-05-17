@@ -105,6 +105,11 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   bool external_audio_buffer_delay_verified_after_reset_ = false;
   size_t min_latency_blocks_ = 0;
   size_t excess_render_detection_counter_ = 0;
+  std::array<int, 10> delay_change_diff_;
+  size_t delay_change_diff_index_ = 0;
+  std::array<int, 250> external_delay_history_;
+  size_t external_delay_history_index_ = 0;
+  size_t external_delay_set_times_ = 0;
 
   int MapDelayToTotalDelay(size_t delay) const;
   int ComputeDelay() const;
@@ -203,6 +208,11 @@ void RenderDelayBufferImpl::Reset() {
     // Unset the delays which are set by AlignFromDelay.
     delay_ = absl::nullopt;
   }
+  delay_change_diff_.fill(0);
+  delay_change_diff_index_ = 0;
+  external_delay_history_.fill(0);
+  external_delay_history_index_ = 0;
+  external_delay_set_times_ = 0;
 }
 
 // Inserts a new block into the render buffers.
@@ -326,7 +336,27 @@ bool RenderDelayBufferImpl::AlignFromDelay(size_t delay) {
   if (delay_ && *delay_ == delay) {
     return false;
   }
+  int diff = delay >= *delay_ ? (int)(delay - *delay_) : -(int)(*delay_ - delay);
   delay_ = delay;
+  delay_change_diff_[delay_change_diff_index_] = diff;
+  delay_change_diff_index_ = (delay_change_diff_index_ + 1) % delay_change_diff_.size();
+  int totalDiff = std::accumulate(delay_change_diff_.begin(), delay_change_diff_.end(), 0);
+  if ((diff <= 4 && diff >= -4) && (totalDiff <= 2 && totalDiff >= -2)) {
+    RTC_LOG(LS_ERROR) << "delay changed in handle";
+    return false;
+  }
+
+  if (external_delay_set_times_ > external_delay_history_.size()) {
+    int meanExternalDelay = std::accumulate(external_delay_history_.begin(), external_delay_history_.end(), 0) / external_delay_history_.size();
+    int varyTimes = 0;
+    std::for_each(external_delay_history_.begin(), external_delay_history_.end(),
+                  [meanExternalDelay, &varyTimes](int a)
+                  { varyTimes += (a > 2 * meanExternalDelay || a < meanExternalDelay / 2) ? 1 : 0; });
+
+    if (varyTimes > 10) {
+      RTC_LOG(LS_ERROR) << "audio system delay in unstable state";
+    }
+  }
 
   // Compute the total delay and limit the delay to the allowed range.
   int total_delay = MapDelayToTotalDelay(*delay_);
@@ -345,8 +375,25 @@ void RenderDelayBufferImpl::SetAudioBufferDelay(int delay_ms) {
         << delay_ms << " ms.";
   }
 
+  data_dumper_->DumpRaw("aec3_audio_device_delay", int32_t(delay_ms));
+# ifdef DUMP_DATA_AS_WAV
+  float datas[64];
+  float data = (float)delay_ms;
+  for (int i = 0; i < 64; i++) {
+    datas[i] = data;
+  }
+  data_dumper_->DumpWav("aec3_audio_device_delay", 64, datas, 16000, 1);
+#endif // DUMP_DATA_AS_WAV
   // Convert delay from milliseconds to blocks (rounded down).
   external_audio_buffer_delay_ = delay_ms / 4;
+  external_delay_history_[external_delay_history_index_] = *external_audio_buffer_delay_;
+  external_delay_history_index_ = (external_delay_history_index_ + 1) % external_delay_history_.size();
+  external_delay_set_times_++;
+  if (external_delay_set_times_ % 250 == 0) {
+    int external_delay_observe =
+        std::accumulate(external_delay_history_.begin(), external_delay_history_.end(), 0) / external_delay_history_.size();
+    RTC_LOG(LS_ERROR) << "audio device report latency = " << external_delay_observe << " ms";
+  }
 }
 
 bool RenderDelayBufferImpl::HasReceivedBufferDelay() {

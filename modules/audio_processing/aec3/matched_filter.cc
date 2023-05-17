@@ -782,6 +782,8 @@ void MatchedFilter::LogFilterProperties(int sample_rate_hz,
 }
 
 void MatchedFilter::Dump() {
+  size_t lag = reported_lag_estimate_ ? reported_lag_estimate_->lag : 0;
+  data_dumper_->DumpRaw("aec3_highest_lag", lag);
   for (size_t n = 0; n < filters_.size(); ++n) {
     const size_t lag_estimate = aec3::MaxSquarePeakIndex(filters_[n]);
     std::string dumper_filter = "aec3_correlator_" + std::to_string(n) + "_h";

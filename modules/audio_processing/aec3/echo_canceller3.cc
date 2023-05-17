@@ -765,6 +765,9 @@ EchoCanceller3::EchoCanceller3(
           std::vector<rtc::ArrayView<float>>(num_capture_channels_)) {
   RTC_DCHECK(ValidFullBandRate(sample_rate_hz_));
 
+  data_dumper_->SetActivated(true);
+  RTC_LOG(LS_ERROR) << "AEC3 create" << this;
+
   if (config_selector_.active_config().delay.fixed_capture_delay_samples > 0) {
     block_delay_buffer_.reset(new BlockDelayBuffer(
         num_capture_channels_, num_bands_, AudioBuffer::kSplitBandSize,
@@ -795,7 +798,9 @@ EchoCanceller3::EchoCanceller3(
                    << ", num capture channels: " << num_capture_channels_;
 }
 
-EchoCanceller3::~EchoCanceller3() = default;
+EchoCanceller3::~EchoCanceller3() {
+  RTC_LOG(LS_ERROR) << "AEC3 destroy" << this;
+}
 
 void EchoCanceller3::Initialize() {
   RTC_DCHECK_RUNS_SERIALIZED(&capture_race_checker_);

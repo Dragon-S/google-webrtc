@@ -12,6 +12,15 @@
 
 #include "absl/strings/string_view.h"
 #include "rtc_base/strings/string_builder.h"
+#include "modules/third_party/helper/helper.h"
+#include "rtc_base/logging.h"
+
+#if defined(WEBRTC_MAC)
+#include <unistd.h>
+#include <sys/stat.h>
+#else
+#include <windows.h>
+#endif
 
 // Check to verify that the define is properly set.
 #if !defined(WEBRTC_APM_DEBUG_DUMP) || \
@@ -28,6 +37,43 @@ namespace {
 constexpr char kPathDelimiter = '\\';
 #else
 constexpr char kPathDelimiter = '/';
+#endif
+
+#if defined(WEBRTC_MAC)
+std::string GetApmDumpDir() {
+  std::string apm_dump_dir = helper::GetXuanXingMeetDir() + "apm_dump";
+  // 检查文件夹是否存在
+  if (access(apm_dump_dir.c_str(), F_OK) != -1) {
+      RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
+  } else {
+      RTC_LOG(LS_ERROR) << "Folder does not exist. apm_dump_dir:: " << apm_dump_dir;
+      // 创建文件夹
+      if (mkdir(apm_dump_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0) {
+          RTC_LOG(LS_INFO) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
+      } else {
+          RTC_LOG(LS_ERROR) << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir;
+          return "";
+      }
+  }
+  return apm_dump_dir;
+}
+#else
+std::string GetApmDumpDir() {
+    std::string apm_dump_dir = helper::GetXuanXingMeetDir() + "apm_dump";
+
+    if (CreateDirectoryA(apm_dump_dir.c_str(), NULL)) {
+        RTC_LOG(LS_INFO) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
+    } else {
+        if GetLastError() == ERROR_ALREADY_EXISTS) {
+          RTC_LOG() << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
+        } else {
+          RTC_LOG() << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir;
+          return "";
+        }
+    }
+
+    return apm_dump_dir;
+}
 #endif
 
 std::string FormFileName(absl::string_view output_dir,
@@ -65,7 +111,9 @@ absl::optional<int> ApmDataDumper::dump_set_to_use_;
 char ApmDataDumper::output_dir_[] = "";
 
 FILE* ApmDataDumper::GetRawFile(absl::string_view name) {
-  std::string filename = FormFileName(output_dir_, name, instance_index_,
+  std::string apm_dump_dir = GetApmDumpDir();
+  RTC_CHECK(apm_dump_dir.length()) << "apm_dump_dir" << " does not exist. ";
+  std::string filename = FormFileName(apm_dump_dir.c_str(), name, instance_index_,
                                       recording_set_index_, ".dat");
   auto& f = raw_files_[filename];
   if (!f) {
@@ -79,7 +127,9 @@ WavWriter* ApmDataDumper::GetWavFile(absl::string_view name,
                                      int sample_rate_hz,
                                      int num_channels,
                                      WavFile::SampleFormat format) {
-  std::string filename = FormFileName(output_dir_, name, instance_index_,
+  std::string apm_dump_dir = GetApmDumpDir();
+  RTC_CHECK(apm_dump_dir.length()) << "apm_dump_dir" << " does not exist. ";
+  std::string filename = FormFileName(apm_dump_dir, name, instance_index_,
                                       recording_set_index_, ".wav");
   auto& f = wav_files_[filename];
   if (!f) {

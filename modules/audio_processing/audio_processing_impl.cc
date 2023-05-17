@@ -1178,6 +1178,10 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
                                 levels.average, 1, RmsLevel::kMinLevelDb, 64);
     RTC_HISTOGRAM_COUNTS_LINEAR("WebRTC.Audio.ApmCaptureInputLevelPeakRms",
                                 levels.peak, 1, RmsLevel::kMinLevelDb, 64);
+    RTC_LOG(LS_ERROR) << "Apm input rms = "
+                      << levels.average
+                      << ", peak = "
+                      << levels.peak;
   }
 
   if (capture_.applied_input_volume.has_value()) {
@@ -1422,6 +1426,10 @@ int AudioProcessingImpl::ProcessCaptureStreamLocked() {
           RmsLevel::kMinLevelDb, 64);
       RTC_HISTOGRAM_COUNTS_LINEAR("WebRTC.Audio.ApmCaptureOutputLevelPeakRms",
                                   levels.peak, 1, RmsLevel::kMinLevelDb, 64);
+      RTC_LOG(LS_ERROR) << "Apm output rms = "
+                        << levels.average
+                        << ", peak = "
+                        << levels.peak;
     }
 
     // Compute echo-detector stats.

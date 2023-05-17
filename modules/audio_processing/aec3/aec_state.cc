@@ -321,6 +321,14 @@ void AecState::Update(
                         subtractor_output[0].e2_coarse);
   data_dumper_->DumpRaw("aec3_subtractor_e2_refined",
                         subtractor_output[0].e2_refined);
+# ifdef DUMP_DATA_AS_WAV
+  float datas[64];
+  float data = initial_state_.InitialStateActive() ? 10000.0f : 0.0f;
+  for (int i = 0; i < 64; i++) {
+    datas[i] = data;
+  }
+  data_dumper_->DumpWav("aec3_initial_state", 64, datas, 16000, 1);
+#endif // DUMP_DATA_AS_WAV
 }
 
 AecState::InitialState::InitialState(const EchoCanceller3Config& config)

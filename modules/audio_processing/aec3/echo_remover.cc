@@ -343,6 +343,14 @@ void EchoRemoverImpl::ProcessCapture(
       }
     }
 
+    int change_code = (int)echo_path_variability.delay_change;
+    if (echo_path_variability.gain_change) {
+      change_code = 3;
+    }
+    RTC_LOG(LS_ERROR)
+      << "handle echo path change maybe lead echo leakage with code "
+      << change_code;
+
     subtractor_.HandleEchoPathChange(echo_path_variability);
     aec_state_.HandleEchoPathChange(echo_path_variability);
 

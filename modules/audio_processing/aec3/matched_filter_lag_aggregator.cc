@@ -75,6 +75,8 @@ absl::optional<DelayEstimate> MatchedFilterLagAggregator::Aggregate(
     int candidate = highest_peak_aggregator_.candidate();
     significant_candidate_found_ = significant_candidate_found_ ||
                                    histogram[candidate] > thresholds_.converged;
+    data_dumper_->DumpRaw("aec3_echo_delay_highest_probabily",
+                          (int32_t)histogram[candidate]);
     if (histogram[candidate] > thresholds_.converged ||
         (histogram[candidate] > thresholds_.initial &&
          !significant_candidate_found_)) {

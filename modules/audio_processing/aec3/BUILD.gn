@@ -122,7 +122,7 @@ rtc_library("aec3") {
     "transparent_mode.h",
   ]
 
-  defines = []
+  defines = ["DUMP_DATA_AS_WAV"]
   if (rtc_build_with_neon && current_cpu != "arm64") {
     suppressed_configs += [ "//build/config/compiler:compiler_arm_fpu" ]
     cflags = [ "-mfpu=neon" ]

@@ -80,7 +80,7 @@ class MatchedFilterLagAggregator {
 
    private:
     std::vector<int> histogram_;
-    std::array<int, 250> histogram_data_;
+    std::array<int, 500> histogram_data_;
     int histogram_data_index_ = 0;
     int candidate_ = -1;
   };

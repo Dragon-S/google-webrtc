@@ -166,6 +166,19 @@ absl::optional<DelayEstimate> RenderDelayControllerImpl::GetDelay(
   data_dumper_->DumpRaw("aec3_render_delay_controller_buffer_delay",
                         delay_ ? delay_->delay : 0);
 
+# ifdef DUMP_DATA_AS_WAV
+  float datas[64];
+  float data = delay_samples ? (float)delay_samples->delay : 0.0f;
+  for (int i = 0; i < 64; i++) {
+    datas[i] = data;
+  }
+  data_dumper_->DumpWav("aec3_render_delay_controller_delay", 64, datas, 16000, 1);
+  data = delay_ ? (float)delay_->delay : 0.0f;
+  for (int i = 0; i < 64; i++) {
+    datas[i] = data * 20.0f;
+  }
+  data_dumper_->DumpWav("aec3_render_delay_controller_buffer_delay", 64, datas, 16000, 1);
+#endif // DUMP_DATA_AS_WAV
   return delay_;
 }
 
