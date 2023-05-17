@@ -64,10 +64,10 @@ std::string GetApmDumpDir() {
     if (CreateDirectoryA(apm_dump_dir.c_str(), NULL)) {
         RTC_LOG(LS_INFO) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
     } else {
-        if GetLastError() == ERROR_ALREADY_EXISTS) {
-          RTC_LOG() << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
+        if (GetLastError() == ERROR_ALREADY_EXISTS) {
+          RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
         } else {
-          RTC_LOG() << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir;
+          RTC_LOG(LS_ERROR) << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir;
           return "";
         }
     }
