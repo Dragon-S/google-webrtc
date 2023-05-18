@@ -20,7 +20,6 @@
 #include <sys/stat.h>
 #else
 #include <windows.h>
-#include <shlobj.h>
 #endif
 
 // Check to verify that the define is properly set.
@@ -41,7 +40,7 @@ constexpr char kPathDelimiter = '/';
 #endif
 
 #if defined(WEBRTC_MAC)
-std::string GetApmDumpDir() {
+std::string CreateApmDumpDir() {
   std::string apm_dump_dir = helper::GetXuanXingMeetDir() + "apm_dump";
   // 检查文件夹是否存在
   if (access(apm_dump_dir.c_str(), F_OK) != -1) {
@@ -58,39 +57,26 @@ std::string GetApmDumpDir() {
   return apm_dump_dir;
 }
 #else
-std::wstring getXuanXingMeetPath() {
-    PWSTR appDataPath = nullptr;
+std::string CreateApmDumpDir() {
+  // 获取apm_dump文件夹路径
+  std::wstring apm_dump_dir_wstr(MAX_PATH, 0);
+  ExpandEnvironmentStringsW( L"%APPDATA%\\XuanXingMeet\\apm_dump", &apm_dump_dir_wstr[0], MAX_PATH);
+  int size_needed = WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, NULL, 0, NULL, NULL);
+  std::string apm_dump_dir_tmp(size_needed, 0);
+  WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, &apm_dump_dir_tmp[0], size_needed, NULL, NULL);
 
-    std::wstring resultPath;
-    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appDataPath) == S_OK) {
-        CoTaskMemFree(appDataPath);
-        resultPath = std::wstring(appDataPath) + L"\\XuanXingMeet\\";
-    } else {
-        CoTaskMemFree(appDataPath);
-        RTC_LOG(LS_ERROR) << "Failed to get appdata path";
-    }
+  //创建apm_dump文件夹
+  if (CreateDirectoryW(apm_dump_dir_wstr.c_str(), NULL)) {
+      RTC_LOG(LS_ERROR) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir_tmp;
+  } else {
+      if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir_tmp;
+      } else {
+        RTC_LOG(LS_ERROR) << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir_tmp;
+      }
+  }
 
-    return resultPath;
-}
-std::string GetApmDumpDir() {
-    std::wstring apm_dump_dir_wstr = getXuanXingMeetPath() + L"apm_dump";
-
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, NULL, 0, NULL, NULL);
-    std::string apm_dump_dir(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, &apm_dump_dir[0], size_needed, NULL, NULL);
-
-    if (CreateDirectoryW(apm_dump_dir_wstr.c_str(), NULL)) {
-        RTC_LOG(LS_ERROR) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
-    } else {
-        if (GetLastError() == ERROR_ALREADY_EXISTS) {
-          RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
-        } else {
-          RTC_LOG(LS_ERROR) << "Failed to create folder. apm_dump_dir:: " << apm_dump_dir;
-          return "";
-        }
-    }
-
-    return apm_dump_dir;
+  return apm_dump_dir_tmp;
 }
 #endif
 
@@ -116,7 +102,9 @@ std::string FormFileName(absl::string_view output_dir,
 
 #if WEBRTC_APM_DEBUG_DUMP == 1
 ApmDataDumper::ApmDataDumper(int instance_index)
-    : instance_index_(instance_index) {}
+    : instance_index_(instance_index) {
+  apm_dump_dir_ = CreateApmDumpDir();
+}
 #else
 ApmDataDumper::ApmDataDumper(int instance_index) {}
 #endif
@@ -129,9 +117,7 @@ absl::optional<int> ApmDataDumper::dump_set_to_use_;
 char ApmDataDumper::output_dir_[] = "";
 
 FILE* ApmDataDumper::GetRawFile(absl::string_view name) {
-  std::string apm_dump_dir = GetApmDumpDir();
-  RTC_CHECK(apm_dump_dir.length()) << "apm_dump_dir" << " does not exist. ";
-  std::string filename = FormFileName(apm_dump_dir.c_str(), name, instance_index_,
+  std::string filename = FormFileName(apm_dump_dir_.c_str(), name, instance_index_,
                                       recording_set_index_, ".dat");
   auto& f = raw_files_[filename];
   if (!f) {
@@ -152,9 +138,7 @@ WavWriter* ApmDataDumper::GetWavFile(absl::string_view name,
                                      int sample_rate_hz,
                                      int num_channels,
                                      WavFile::SampleFormat format) {
-  std::string apm_dump_dir = GetApmDumpDir();
-  RTC_CHECK(apm_dump_dir.length()) << "apm_dump_dir" << " does not exist. ";
-  std::string filename = FormFileName(apm_dump_dir.c_str(), name, instance_index_,
+  std::string filename = FormFileName(apm_dump_dir_.c_str(), name, instance_index_,
                                       recording_set_index_, ".wav");
   auto& f = wav_files_[filename];
   if (!f) {

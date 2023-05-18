@@ -394,6 +394,7 @@ class ApmDataDumper {
   static absl::optional<int> dump_set_to_use_;
   static constexpr size_t kOutputDirMaxLength = 1024;
   static char output_dir_[kOutputDirMaxLength];
+  std::string apm_dump_dir_ = "";
   const int instance_index_;
   int recording_set_index_ = 0;
   std::unordered_map<std::string, std::unique_ptr<FILE, RawFileCloseFunctor>>
