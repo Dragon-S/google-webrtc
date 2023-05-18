@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #else
 #include <windows.h>
+#include <shlobj.h>
 #endif
 
 // Check to verify that the define is properly set.
@@ -46,7 +47,6 @@ std::string GetApmDumpDir() {
   if (access(apm_dump_dir.c_str(), F_OK) != -1) {
       RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
   } else {
-      RTC_LOG(LS_ERROR) << "Folder does not exist. apm_dump_dir:: " << apm_dump_dir;
       // 创建文件夹
       if (mkdir(apm_dump_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0) {
           RTC_LOG(LS_INFO) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
@@ -58,11 +58,29 @@ std::string GetApmDumpDir() {
   return apm_dump_dir;
 }
 #else
-std::string GetApmDumpDir() {
-    std::string apm_dump_dir = helper::GetXuanXingMeetDir() + "apm_dump";
+std::wstring getXuanXingMeetPath() {
+    PWSTR appDataPath = nullptr;
 
-    if (CreateDirectoryA(apm_dump_dir.c_str(), NULL)) {
-        RTC_LOG(LS_INFO) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
+    std::wstring resultPath;
+    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appDataPath) == S_OK) {
+        CoTaskMemFree(appDataPath);
+        resultPath = std::wstring(appDataPath) + L"\\XuanXingMeet\\";
+    } else {
+        CoTaskMemFree(appDataPath);
+        RTC_LOG(LS_ERROR) << "Failed to get appdata path";
+    }
+
+    return resultPath;
+}
+std::string GetApmDumpDir() {
+    std::wstring apm_dump_dir_wstr = getXuanXingMeetPath() + L"apm_dump";
+
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, NULL, 0, NULL, NULL);
+    std::string apm_dump_dir(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, apm_dump_dir_wstr.c_str(), -1, &apm_dump_dir[0], size_needed, NULL, NULL);
+
+    if (CreateDirectoryW(apm_dump_dir_wstr.c_str(), NULL)) {
+        RTC_LOG(LS_ERROR) << "Folder created successfully. apm_dump_dir:: " << apm_dump_dir;
     } else {
         if (GetLastError() == ERROR_ALREADY_EXISTS) {
           RTC_LOG(LS_INFO) << "Folder exists. apm_dump_dir:: " << apm_dump_dir;
@@ -117,7 +135,14 @@ FILE* ApmDataDumper::GetRawFile(absl::string_view name) {
                                       recording_set_index_, ".dat");
   auto& f = raw_files_[filename];
   if (!f) {
+#if defined(WEBRTC_WIN)
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, filename.c_str(), -1, NULL, 0);
+    std::wstring filename_wstr(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, filename.c_str(), -1, &filename_wstr[0], size_needed);
+    f.reset(_wfopen(filename_wstr.c_str(), L"wb"));
+#else
     f.reset(fopen(filename.c_str(), "wb"));
+#endif
     RTC_CHECK(f.get()) << "Cannot write to " << filename << ".";
   }
   return f.get();
@@ -129,7 +154,7 @@ WavWriter* ApmDataDumper::GetWavFile(absl::string_view name,
                                      WavFile::SampleFormat format) {
   std::string apm_dump_dir = GetApmDumpDir();
   RTC_CHECK(apm_dump_dir.length()) << "apm_dump_dir" << " does not exist. ";
-  std::string filename = FormFileName(apm_dump_dir, name, instance_index_,
+  std::string filename = FormFileName(apm_dump_dir.c_str(), name, instance_index_,
                                       recording_set_index_, ".wav");
   auto& f = wav_files_[filename];
   if (!f) {
