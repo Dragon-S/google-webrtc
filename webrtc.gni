@@ -118,7 +118,7 @@ declare_args() {
 
   # Selects whether debug dumps for the audio processing module
   # should be generated.
-  apm_debug_dump = true
+  apm_debug_dump = false
 
   # Selects whether the audio processing module should be excluded.
   rtc_exclude_audio_processing_module = false
