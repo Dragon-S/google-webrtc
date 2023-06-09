@@ -142,6 +142,12 @@ class EchoRemoverImpl final : public EchoRemover {
   void FormLinearFilterOutput(const SubtractorOutput& subtractor_output,
                               rtc::ArrayView<float> output);
 
+  bool CorrelateDTD(rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> error,
+                  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> capture,
+                  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> remote);
+
+  bool FlatnessDTD(rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> error);
+
   static std::atomic<int> instance_count_;
   const EchoCanceller3Config config_;
   const Aec3Fft fft_;
@@ -178,6 +184,10 @@ class EchoRemoverImpl final : public EchoRemover {
   std::vector<FftData> comfort_noise_heap_;
   std::vector<FftData> high_band_comfort_noise_heap_;
   std::vector<SubtractorOutput> subtractor_output_heap_;
+  std::vector<std::array<float, 2>> long_term_correlate_;
+  std::vector<std::array<float, 2>> long_term_residual_;
+  std::vector<float> long_term_flatness_;
+  std::vector<float> short_term_flatness_;
 };
 
 std::atomic<int> EchoRemoverImpl::instance_count_(0);
@@ -223,7 +233,11 @@ EchoRemoverImpl::EchoRemoverImpl(const EchoCanceller3Config& config,
       E_heap_(NumChannelsOnHeap(num_capture_channels_)),
       comfort_noise_heap_(NumChannelsOnHeap(num_capture_channels_)),
       high_band_comfort_noise_heap_(NumChannelsOnHeap(num_capture_channels_)),
-      subtractor_output_heap_(NumChannelsOnHeap(num_capture_channels_)) {
+      subtractor_output_heap_(NumChannelsOnHeap(num_capture_channels_)),
+      long_term_correlate_(num_capture_channels, {0.0f}),
+      long_term_residual_(num_capture_channels, {0.0f}),
+      long_term_flatness_(num_capture_channels, -100.0f),
+      short_term_flatness_(num_capture_channels, -100.0f) {
   RTC_DCHECK(ValidFullBandRate(sample_rate_hz));
 }
 
@@ -417,6 +431,14 @@ void EchoRemoverImpl::ProcessCapture(
   // is used.
   std::array<float, kFftLengthBy2Plus1> G;
   if (capture_output_used_) {
+    // correlate based DTD
+    bool DTD = false;
+    if (aec_state_.UsableLinearEstimate()) {
+      bool condition1 = CorrelateDTD(E2, Y2, render_buffer->Spectrum(0));
+      bool condition2 = FlatnessDTD(E2);
+      DTD = condition1 && condition2;
+    }
+
     // Estimate the residual echo power.
     residual_echo_estimator_.Estimate(aec_state_, *render_buffer, S2_linear, Y2,
                                       suppression_gain_.IsDominantNearend(), R2,
@@ -445,7 +467,7 @@ void EchoRemoverImpl::ProcessCapture(
     float high_bands_gain;
     suppression_gain_.GetGain(nearend_spectrum, echo_spectrum, R2, R2_unbounded,
                               cng_.NoiseSpectrum(), render_signal_analyzer_,
-                              aec_state_, x, clock_drift, &high_bands_gain, &G);
+                              aec_state_, x, clock_drift, &high_bands_gain, &G, DTD);
 
     suppression_filter_.ApplyGain(comfort_noise, high_band_comfort_noise, G,
                                   high_bands_gain, Y_fft, y);
@@ -514,6 +536,108 @@ void EchoRemoverImpl::FormLinearFilterOutput(
                                       : subtractor_output.e_coarse,
                    output);
   refined_filter_output_last_selected_ = use_refined_output;
+}
+
+// a correlate based method for DTD
+// return TRUE if nearend voice activate detected when remote voice activated
+bool EchoRemoverImpl::CorrelateDTD(rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> error,
+                  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> capture,
+                  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> remote) {
+  // e-x correlate
+  float feature1 = -100.0f;
+  for (size_t i = 0; i < error.size(); i++) {
+    float EX = 0.0f, EE = 0.0f, XX = 0.0f;
+    for (size_t j = 0; j < kFftLengthBy2Plus1 / 2; j++) {
+      EE += error[i][j] * error[i][j];
+      XX += remote[i][j] * remote[i][j];
+      EX += error[i][j] * remote[i][j];
+    }
+    float temp = EX / sqrtf(XX * EE + 1e-6f);
+    float correlateLow = 0.999f * long_term_correlate_[i][0] + 0.001f * temp;
+    long_term_correlate_[i][0] = correlateLow < 1.0f ? correlateLow : 1.0f;
+
+    EX = EE = XX = 0.0f;
+    for (size_t j = kFftLengthBy2Plus1 / 2; j < kFftLengthBy2Plus1 - 1; j++) {
+      EE += error[i][j] * error[i][j];
+      XX += remote[i][j] * remote[i][j];
+      EX += error[i][j] * remote[i][j];
+    }
+    temp = EX / sqrtf(XX * EE + 1e-6f);
+    float correlateHigh = 0.999f * long_term_correlate_[i][1] + 0.001f * temp;
+    long_term_correlate_[i][1] = correlateHigh < 1.0f ? correlateHigh : 1.0f;
+
+    temp = long_term_correlate_[i][1] / (long_term_correlate_[i][0] + 1e-6f);
+    feature1 = feature1 < temp ? temp : feature1;
+  }
+
+  // e-y residual
+  float feature2 = -100.0f;
+  for (size_t i = 0; i < error.size(); i++) {
+    float E = 0.0f, Y = 0.0f;
+    for (size_t j = 0; j < kFftLengthBy2Plus1 / 2; j++) {
+      E += error[i][j];
+      Y += capture[i][j];
+    }
+    float temp = E / (Y + 1e-6f);
+    float residualLow = 0.999f * long_term_residual_[i][0] + 0.001f * temp;
+    long_term_residual_[i][0] = residualLow < 1.0f ? residualLow : 1.0f;
+
+    E = Y = 0.0f;
+    for (size_t j = kFftLengthBy2Plus1 / 2; j < kFftLengthBy2Plus1 - 1; j++) {
+      E += error[i][j];
+      Y += capture[i][j];
+    }
+    temp = E / (Y + 1e-6f);
+    float residualHigh = 0.999f * long_term_residual_[i][1] + 0.001f * temp;
+    long_term_residual_[i][1] = residualHigh < 1.0f ? residualHigh : 1.0f;
+
+    temp = long_term_residual_[i][1] / (long_term_residual_[i][0] + 1e-6f);
+    feature2 = feature2 < temp ? temp : feature2;
+  }
+
+  return feature1 > 0.95f && feature2 > 0.85f;
+}
+
+// a flatness based method for DTD
+bool EchoRemoverImpl::FlatnessDTD(rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> error) {
+  // e flatness
+  float feature = -100.0f;
+  for (size_t i = 0; i < error.size(); i++) {
+    float temp1 = 0.0f, temp2 = 0.0f;
+    for (size_t j = 0; j < kFftLengthBy2Plus1 / 2; j++) {
+      temp1 += logf(error[i][j] + 1e-6f);
+      temp2 += error[i][j];
+    }
+    float geomitricMeanLow = expf(temp1 / (float)(kFftLengthBy2Plus1 / 2.0f));
+    float arithmeticMeanLow = temp2 / (float)(kFftLengthBy2Plus1 / 2.0f);
+    float flatnessLow = geomitricMeanLow / (arithmeticMeanLow + 1e-6f);
+
+    temp1 = temp2 = 0.0f;
+    for (size_t j = kFftLengthBy2Plus1 / 2; j < kFftLengthBy2Plus1 - 1; j++) {
+      temp1 += logf(error[i][j] + 1e-6f);
+      temp2 += error[i][j];
+    }
+    float geomitricMeanHigh = expf(temp1 / (float)(kFftLengthBy2Plus1 / 2.0f));
+    float arithmeticMeanHigh = temp2 / (float)(kFftLengthBy2Plus1 / 2.0f);
+    float flatnessHigh = geomitricMeanHigh / (arithmeticMeanHigh + 1e-6f);
+
+    float temp = flatnessHigh / (flatnessLow + 1e-6f);
+    if (long_term_flatness_[i] < 0.0f) {
+      long_term_flatness_[i] = temp;
+    } else {
+      long_term_flatness_[i] = 0.9999f * long_term_flatness_[i] + 0.0001f * temp;
+    }
+    if (short_term_flatness_[i] < 0.0f) {
+      short_term_flatness_[i] = temp;
+    } else {
+      short_term_flatness_[i] = 0.9f * short_term_flatness_[i] + 0.1f * temp;
+    }
+
+    temp = short_term_flatness_[i] / (long_term_flatness_[i] + 1e-6f);
+    feature = feature < temp ? temp : feature;
+  }
+
+  return feature > 1.2f;
 }
 
 }  // namespace

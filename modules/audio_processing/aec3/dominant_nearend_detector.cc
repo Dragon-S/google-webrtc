@@ -33,7 +33,8 @@ void DominantNearendDetector::Update(
         residual_echo_spectrum,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
         comfort_noise_spectrum,
-    bool initial_state) {
+    bool initial_state,
+    bool DTD) {
   nearend_state_ = false;
 
   auto low_frequency_energy = [](rtc::ArrayView<const float> spectrum) {
@@ -69,7 +70,7 @@ void DominantNearendDetector::Update(
 
     // Remain in any nearend mode for a certain duration.
     hold_counters_[ch] = std::max(0, hold_counters_[ch] - 1);
-    nearend_state_ = nearend_state_ || hold_counters_[ch] > 0;
+    nearend_state_ = nearend_state_ || hold_counters_[ch] > 0 || DTD;
   }
 }
 }  // namespace webrtc

@@ -55,7 +55,8 @@ class SuppressionGain {
       const Block& render,
       bool clock_drift,
       float* high_bands_gain,
-      std::array<float, kFftLengthBy2Plus1>* low_band_gain);
+      std::array<float, kFftLengthBy2Plus1>* low_band_gain,
+      bool DTD);
 
   bool IsDominantNearend() {
     return dominant_nearend_detector_->IsNearendState();

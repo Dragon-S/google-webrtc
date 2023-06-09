@@ -36,7 +36,8 @@ class SubbandNearendDetector : public NearendDetector {
                   residual_echo_spectrum,
               rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
                   comfort_noise_spectrum,
-              bool initial_state) override;
+              bool initial_state,
+              bool DTD) override;
 
  private:
   const EchoCanceller3Config::Suppressor::SubbandNearendDetection config_;

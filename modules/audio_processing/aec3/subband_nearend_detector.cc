@@ -33,7 +33,8 @@ void SubbandNearendDetector::Update(
         residual_echo_spectrum,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
         comfort_noise_spectrum,
-    bool initial_state) {
+    bool initial_state,
+    bool DTD) {
   nearend_state_ = false;
   for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
     const std::array<float, kFftLengthBy2Plus1>& noise =
@@ -64,7 +65,7 @@ void SubbandNearendDetector::Update(
         nearend_state_ ||
         (nearend_power_subband1 <
              config_.nearend_threshold * nearend_power_subband2 &&
-         (nearend_power_subband1 > config_.snr_threshold * noise_power));
+         (nearend_power_subband1 > config_.snr_threshold * noise_power)) || DTD;
   }
 }
 }  // namespace webrtc

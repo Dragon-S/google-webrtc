@@ -34,7 +34,8 @@ class NearendDetector {
           residual_echo_spectrum,
       rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
           comfort_noise_spectrum,
-      bool initial_state) = 0;
+      bool initial_state,
+      bool DTD) = 0;
 };
 
 }  // namespace webrtc

@@ -374,7 +374,8 @@ void SuppressionGain::GetGain(
     const Block& render,
     bool clock_drift,
     float* high_bands_gain,
-    std::array<float, kFftLengthBy2Plus1>* low_band_gain) {
+    std::array<float, kFftLengthBy2Plus1>* low_band_gain,
+    bool DTD) {
   RTC_DCHECK(high_bands_gain);
   RTC_DCHECK(low_band_gain);
 
@@ -385,7 +386,7 @@ void SuppressionGain::GetGain(
 
   // Update the nearend state selection.
   dominant_nearend_detector_->Update(nearend_spectrum, echo,
-                                     comfort_noise_spectrum, initial_state_);
+                                     comfort_noise_spectrum, initial_state_, DTD);
 
   // Compute gain for the lower band.
   bool low_noise_render = low_render_detector_.Detect(render);
