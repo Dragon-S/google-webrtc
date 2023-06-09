@@ -33,7 +33,7 @@ public:
     ~HowlingSuppressor();
 
     // Applies howling suppression.
-    void Process(float* audio);
+    void Process(float* audio, float* audioHighband);
 
     // Enable or disable howling suppression
     void Enable(bool enable);

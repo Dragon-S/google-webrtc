@@ -43,7 +43,7 @@ int HowlingSuppressionImpl::ProcessCaptureAudio(AudioBuffer* audio) {
   }
 
   for (size_t i = 0; i < howlingSuppressor_.size(); i++) {
-      howlingSuppressor_[i]->Process(audio->split_bands_f(i)[0]);
+      howlingSuppressor_[i]->Process(audio->split_bands_f(i)[0], audio->split_bands_f(i)[1]);
   }
   return AudioProcessing::kNoError;
 }

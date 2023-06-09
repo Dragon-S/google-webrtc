@@ -70,7 +70,7 @@ HowlingSuppressor::~HowlingSuppressor() {
 #endif // HS_DEBUG_RECORD
 }
 
-void HowlingSuppressor::Process(float* audio) {
+void HowlingSuppressor::Process(float* audio, float* audioHighband) {
     if (!enabled_) {
         return;
     }
@@ -203,6 +203,7 @@ void HowlingSuppressor::Process(float* audio) {
         float step = (targetSuppression - howlingSuppression_) / (float)kHsFrameSize;
         for (size_t i = 0; i < kHsFrameSize; i++) {
             audio[i] *= howlingSuppression_;
+            audioHighband[i] *= howlingSuppression_;
             howlingSuppression_ += step;
         }
     } else {
@@ -210,6 +211,7 @@ void HowlingSuppressor::Process(float* audio) {
         float step = (targetSuppression - howlingSuppression_) / (float)kHsFrameSize;
         for (size_t i = 0; i < kHsFrameSize; i++) {
             audio[i] *= howlingSuppression_;
+            audioHighband[i] *= howlingSuppression_;
             howlingSuppression_ += step;
         }
 
@@ -305,6 +307,12 @@ void HowlingSuppressor::Process(float* audio) {
             }
         }
 
+        float beforeEnergy = 0.0f;
+        // std::for_each(std::begin(audio), std::end(audio), [&beforeEnergy](float x) { beforeEnergy += x * x; });
+        for (size_t i = 0; i < kHsFrameSize; i++) {
+            beforeEnergy += (audio[i] * audio[i]);
+        }
+
         for (size_t i = 0; i < kMaxNotchFilter; i++) {
             if (notchFilter_[i].first > kFadeOutMark) {
                 notchFilter_[i].first = 0;
@@ -314,6 +322,19 @@ void HowlingSuppressor::Process(float* audio) {
                 notchFilter_[i].second->runningFilter(audio, kHsFrameSize, filterFade::kFadeIn);
             } else if (notchFilter_[i].first > 0) {
                 notchFilter_[i].second->runningFilter(audio, kHsFrameSize, filterFade::kNoFade);
+            }
+        }
+        float afterEnergy = 0.0f; 
+        // std::for_each(std::begin(audio), std::end(audio), [&afterEnergy](float x) { afterEnergy += (x * x); });
+        for (size_t i = 0; i < kHsFrameSize; i++) {
+            afterEnergy += (audio[i] * audio[i]);
+        }
+        float gain = afterEnergy / (beforeEnergy + 1e-6f);
+        if (gain < 0.9025f) {
+            gain = gain > 1e-4f ? sqrtf(gain) : 0.01f;
+            //std::transform(std::begin(audioHighband), std::end(audioHighband), std::begin(audioHighband), [gain](float x) { return x * gain; });
+            for (size_t i = 0; i < kHsFrameSize; i++) {
+                audioHighband[i] *= gain;
             }
         }
     }
