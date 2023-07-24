@@ -990,6 +990,13 @@ rtc_library("neteq") {
     "neteq/timestamp_scaler.h",
     "neteq/underrun_optimizer.cc",
     "neteq/underrun_optimizer.h",
+    "neteq/nnPlc/weights.h",
+    "neteq/nnPlc/fft.h",
+    "neteq/nnPlc/fft.cc",
+    "neteq/nnPlc/nn.h",
+    "neteq/nnPlc/nn.cc",
+    "neteq/nnPlc/plc.h",
+    "neteq/nnPlc/plc.cc",
   ]
 
   deps = [
