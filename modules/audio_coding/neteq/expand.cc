@@ -39,6 +39,7 @@ Expand::Expand(BackgroundNoise* background_noise,
       fs_hz_(fs),
       num_channels_(num_channels),
       consecutive_expands_(0),
+      nn_plc_(new nnPlc::Plc()),
       background_noise_(background_noise),
       statistics_(statistics),
       overlap_length_(5 * fs / 8000),
@@ -53,6 +54,7 @@ Expand::Expand(BackgroundNoise* background_noise,
   RTC_DCHECK_GT(num_channels_, 0);
   memset(expand_lags_, 0, sizeof(expand_lags_));
   Reset();
+  nn_plc_->initialize();
 }
 
 Expand::~Expand() = default;
@@ -65,9 +67,28 @@ void Expand::Reset() {
     channel_parameters_[ix].expand_vector0.Clear();
     channel_parameters_[ix].expand_vector1.Clear();
   }
+  nn_plc_->reset();
+  nn_plc_input_.resize(160, 0.0f);
+  nn_plc_output_.resize(288, 0.0f);
 }
 
 int Expand::Process(AudioMultiVector* output) {
+  if (nn_plc_) {
+    if (first_expand_) {
+      first_expand_ = false;
+      nn_plc_->reset();
+    }
+    size_t start_ix = sync_buffer_->Size() - 160;
+    for (size_t i = 0; i < 160; i++) {
+      nn_plc_input_[i] = (float)(*sync_buffer_)[0][start_ix + i] / 32768.0f;
+    }
+    nn_plc_->process(nn_plc_input_.data(), nn_plc_output_.data());
+    for (size_t i = 0; i < 288; i++) {
+      (*output)[0][i] = (int16_t)(nn_plc_output_[i] * 32767.0f);
+    }
+    return 0;
+  }
+
   int16_t random_vector[kMaxSampleRate / 8000 * 120 + 30];
   int16_t scaled_random_vector[kMaxSampleRate / 8000 * 125];
   static const int kTempDataSize = 3600;

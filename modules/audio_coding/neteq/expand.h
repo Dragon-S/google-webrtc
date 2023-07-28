@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "modules/audio_coding/neteq/audio_vector.h"
+#include "modules/audio_coding/neteq/nnPlc/plc.h"
 
 namespace webrtc {
 
@@ -126,6 +127,9 @@ class Expand {
 
   void UpdateLagIndex();
 
+  nnPlc::Plc* const nn_plc_;
+  std::vector<float> nn_plc_input_;
+  std::vector<float> nn_plc_output_;
   BackgroundNoise* const background_noise_;
   StatisticsCalculator* const statistics_;
   const size_t overlap_length_;

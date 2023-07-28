@@ -14,6 +14,8 @@ public:
 
     int initialize();
 
+    void reset();
+
     void process(const float* input, float* output);
 
 private:

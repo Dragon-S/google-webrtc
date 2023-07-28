@@ -21,6 +21,9 @@ private:
     void tdCapture2();
     void decode(float* output);
 
+    float tansig(float x);
+    float sigmoid(float x);
+
 private:
     const size_t EncodeInputSize_ = 129;
     const size_t EncodeOutputSize_ = 64;
@@ -36,6 +39,7 @@ private:
 
     float *z_ = nullptr;
     float *r_ = nullptr;
+    float *s_ = nullptr;
 };
 
 } // namespace nnPlc
