@@ -130,6 +130,7 @@ class Expand {
   nnPlc::Plc* const nn_plc_;
   std::vector<float> nn_plc_input_;
   std::vector<float> nn_plc_output_;
+  std::vector<int16_t> nn_plc_transform_;
   BackgroundNoise* const background_noise_;
   StatisticsCalculator* const statistics_;
   const size_t overlap_length_;

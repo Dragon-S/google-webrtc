@@ -24,6 +24,7 @@
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 #include "modules/audio_coding/neteq/sync_buffer.h"
 #include "rtc_base/numerics/safe_conversions.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 
@@ -70,22 +71,29 @@ void Expand::Reset() {
   nn_plc_->reset();
   nn_plc_input_.resize(160, 0.0f);
   nn_plc_output_.resize(288, 0.0f);
+  nn_plc_transform_.resize(864, 0);
 }
 
 int Expand::Process(AudioMultiVector* output) {
   if (nn_plc_) {
+    RTC_LOG(LS_ERROR) << "NNPLC processing with fs = " << fs_hz_;
     if (first_expand_) {
       first_expand_ = false;
       nn_plc_->reset();
     }
-    size_t start_ix = sync_buffer_->Size() - 160;
-    for (size_t i = 0; i < 160; i++) {
-      nn_plc_input_[i] = (float)(*sync_buffer_)[0][start_ix + i] / 32768.0f;
+    size_t start_ix = sync_buffer_->Size() - 480;
+    for (size_t i = 0, j = 0; i < 160; i++, j += 3) {
+      nn_plc_input_[i] = (float)(*sync_buffer_)[0][start_ix + j] / 32768.0f;
     }
     nn_plc_->process(nn_plc_input_.data(), nn_plc_output_.data());
-    for (size_t i = 0; i < 288; i++) {
-      (*output)[0][i] = (int16_t)(nn_plc_output_[i] * 32767.0f);
+    start_ix = sync_buffer_->Size() - overlap_length_;
+    for (size_t i = 0; i < overlap_length_; i++) {
+      (*sync_buffer_)[0][start_ix + i] = ((96 - i) * (*sync_buffer_)[0][start_ix + i] + i * (int16_t)(nn_plc_output_[i / 3] * 32767.0f)) / 96;
     }
+    for (size_t i = overlap_length_; i < 864; i++) {
+      nn_plc_transform_[i - overlap_length_] = (int16_t)(nn_plc_output_[i / 3] * 32767.0f);
+    }
+    (*output)[0].OverwriteAt(nn_plc_transform_.data(), 576, 0);
     return 0;
   }
 
