@@ -81,14 +81,19 @@ int Expand::Process(AudioMultiVector* output) {
       first_expand_ = false;
       nn_plc_->reset();
     }
-    size_t start_ix = sync_buffer_->Size() - 480;
+    size_t start_ix = 0;
+    if (sync_buffer_->Size() > 480) {
+      start_ix = sync_buffer_->Size() - 480;
+    }
     for (size_t i = 0, j = 0; i < 160; i++, j += 3) {
-      nn_plc_input_[i] = (float)(*sync_buffer_)[0][start_ix + j] / 32768.0f;
+      nn_plc_input_[i] = (float)((*sync_buffer_)[0][start_ix + j]) / 32768.0f;
     }
     nn_plc_->process(nn_plc_input_.data(), nn_plc_output_.data());
     start_ix = sync_buffer_->Size() - overlap_length_;
     for (size_t i = 0; i < overlap_length_; i++) {
-      (*sync_buffer_)[0][start_ix + i] = ((96 - i) * (*sync_buffer_)[0][start_ix + i] + i * (int16_t)(nn_plc_output_[i / 3] * 32767.0f)) / 96;
+      int32_t t1 = (int32_t)(overlap_length_ - i) * (*sync_buffer_)[0][start_ix + i];
+      int32_t t2 = (int32_t)(i * nn_plc_output_[i / 3] * 32767.0f);
+      (*sync_buffer_)[0][start_ix + i] = (int16_t)((t1 + t2) / (int32_t)overlap_length_);
     }
     for (size_t i = overlap_length_; i < 864; i++) {
       nn_plc_transform_[i - overlap_length_] = (int16_t)(nn_plc_output_[i / 3] * 32767.0f);

@@ -27,6 +27,8 @@ private:
     const size_t blockSize_ = 160;
     const size_t overlapSize_ = 96;
 
+    const float mPI = acosf(-1.0f);
+
     size_t plcCount_ = 0;
 
     std::vector<float> phaseBase_;

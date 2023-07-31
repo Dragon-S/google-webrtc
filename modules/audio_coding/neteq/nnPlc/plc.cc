@@ -48,7 +48,16 @@ void Plc::process(const float* input, float* output) {
         }
 
         fft_->FftForward(real_, imag_);
-        std::transform(real_.begin(), real_.begin() + processSize_, imag_.begin(), phaseBase_.begin(), [](float a, float b) { return atanf(b / (a + 1e-6)); });
+        std::transform(real_.begin(), real_.begin() + processSize_, imag_.begin(), phaseBase_.begin(), [this](float a, float b) { 
+            float p = atanf(b / (a + 1e-6));
+            if ((a * b < 0.0f) && (a < 0.0f)) {
+                return p + mPI;
+            }
+            else if ((a * b > 0.0f) && (a < 0.0f)) {
+                return p - mPI;
+            }
+            return p;
+        });
         std::transform(real_.begin(), real_.begin() + processSize_, imag_.begin(), logX_.begin(), [](float a, float b) { return sqrtf(a * a + b * b); });
         std::transform(logX_.begin(), logX_.end() - 1, logX_.begin(), [](float a) { return a < 0.0032f ? 0.0032f : (a > 316.2277f ? 316.2277f : a); });
         std::transform(logX_.begin(), logX_.end() - 1, logX_.begin(), [](float a) { return (20.0f * log10f(a + 1e-6f) + 50.0f) / 100.0f; });
