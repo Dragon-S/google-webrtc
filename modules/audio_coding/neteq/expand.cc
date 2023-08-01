@@ -56,6 +56,7 @@ Expand::Expand(BackgroundNoise* background_noise,
   memset(expand_lags_, 0, sizeof(expand_lags_));
   Reset();
   nn_plc_->initialize();
+  RTC_LOG(LS_ERROR) << "NNPLC initialize";
 }
 
 Expand::~Expand() = default;
