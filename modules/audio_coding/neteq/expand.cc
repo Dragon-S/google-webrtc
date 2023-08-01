@@ -76,7 +76,7 @@ void Expand::Reset() {
 
 int Expand::Process(AudioMultiVector* output) {
   if (nn_plc_) {
-    RTC_LOG(LS_ERROR) << "NNPLC processing with fs = " << fs_hz_;
+    // RTC_LOG(LS_ERROR) << "NNPLC processing with fs = " << fs_hz_;
     if (first_expand_) {
       first_expand_ = false;
       nn_plc_->reset();
