@@ -176,7 +176,7 @@ class RTC_EXPORT DesktopFrame {
   uint32_t capturer_id_;
   std::vector<uint8_t> icc_profile_;
   DesktopRect original_window_rect_;
-  bool shared_window_minimized_;
+  bool shared_window_minimized_ = false;
 };
 
 // A DesktopFrame that stores data in the heap.
